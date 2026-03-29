@@ -137,40 +137,64 @@
         .frieren-subtitle { font-style: italic; font-size: 1.1rem; color: var(--text-muted); letter-spacing: 0.3em; font-weight: 300; z-index: 1; text-align: center; }
         .frieren-quote { font-style: italic; color: #4a6878; font-size: 0.95rem; text-align: center; max-width: 380px; line-height: 1.7; z-index: 1; margin-bottom: 8px; }
 
-        /* THE GRIMOIRE CARDS (Replaces Signposts) */
-        .grimoire-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 500px; margin-top: 3rem; z-index: 10; }
-        .grimoire-card {
-            background: linear-gradient(180deg, rgba(16,28,45,0.6), rgba(6,12,20,0.9));
-            border: 1px solid var(--border); border-radius: 16px; padding: 32px 20px;
-            color: var(--text-main); font-family: 'Cinzel', serif; text-align: center;
-            cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column; align-items: center; gap: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+        /* THE CROSSROADS - MYSTICAL SIGNPOST UI */
+        .signpost-wrapper {
+            position: relative; display: flex; flex-direction: column; align-items: center; 
+            margin-top: 3rem; z-index: 10; width: 100%;
         }
-        .grimoire-card::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(100,180,220,0.1) 0%, transparent 60%);
-            opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
+        .signpost-pole {
+            width: 12px; height: 100%; min-height: 220px;
+            background: linear-gradient(90deg, #0a1520, #1e3a50, #0a1520);
+            position: absolute; top: -10px; z-index: 0; border-radius: 6px 6px 0 0;
+            box-shadow: inset -2px 0 5px rgba(0,0,0,0.8), 0 0 15px rgba(100,180,220,0.1);
+            border-left: 1px solid rgba(100, 180, 220, 0.2);
+            border-right: 1px solid rgba(100, 180, 220, 0.2);
         }
-        .grimoire-card i { width: 40px; height: 40px; color: var(--accent); transition: transform 0.4s; }
-        .grimoire-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.1em; line-height: 1.3; }
-        .grimoire-desc { font-family: 'Crimson Pro', serif; font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+        .signpost-signs {
+            display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 320px;
+            z-index: 1; position: relative; padding: 20px 0;
+        }
+        .sign-btn {
+            position: relative; width: 100%; 
+            background: linear-gradient(180deg, rgba(20, 32, 48, 0.9), rgba(10, 18, 28, 0.95));
+            border: 1px solid rgba(122, 184, 208, 0.4); 
+            color: #c8e0f0; font-family: 'Cinzel', serif; font-size: 1.05rem;
+            font-weight: 700; letter-spacing: 0.1em; padding: 18px 20px; cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease, box-shadow 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 15px rgba(122, 184, 208, 0.05);
+            backdrop-filter: blur(8px);
+        }
+        .sign-btn::after { /* Mystical glowing rivet */
+            content: ''; position: absolute; width: 8px; height: 8px; 
+            background: #a8c4d8; border-radius: 50%; top: 50%; transform: translateY(-50%); 
+            box-shadow: 0 0 10px #7ab8d0, inset 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        .sign-left {
+            clip-path: polygon(24px 0%, 100% 0%, 100% 100%, 24px 100%, 0% 50%);
+            padding-left: 36px; transform: rotate(-2deg);
+        }
+        .sign-left::after { right: 24px; }
+        .sign-left:hover { transform: rotate(-2deg) scale(1.05); box-shadow: 0 0 25px rgba(122, 184, 208, 0.3); border-color: #a8c4d8; color: #fff;}
         
-        .grimoire-card:hover { transform: translateY(-8px); border-color: var(--accent); box-shadow: 0 15px 40px rgba(0,0,0,0.7), 0 0 30px var(--accent-glow); }
-        .grimoire-card:hover::before { opacity: 1; }
-        .grimoire-card:hover i { transform: scale(1.1); color: #c8e8f8; }
-
-        .back-to-paths {
-            position: absolute; top: -40px; left: 0; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;
-            font-size: 0.8rem; font-family: 'Cinzel', serif; letter-spacing: 0.1em; text-decoration: none; border: none; background: none;
+        .sign-right {
+            clip-path: polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%);
+            padding-right: 36px; transform: rotate(2deg);
         }
-        .back-to-paths:hover { color: var(--accent); }
+        .sign-right::after { left: 24px; }
+        .sign-right:hover { transform: rotate(2deg) scale(1.05); box-shadow: 0 0 25px rgba(122, 184, 208, 0.3); border-color: #a8c4d8; color: #fff;}
 
         .landing-card {
             width: 100%; background: var(--bg-card); border: 1px solid var(--border);
             border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(100,160,200,0.03);
             padding: 36px; position: relative; z-index: 1; display: none;
         }
+
+        .back-to-paths {
+            position: absolute; top: -40px; left: 0; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; font-family: 'Cinzel', serif; letter-spacing: 0.1em; text-decoration: none; border: none; background: none;
+        }
+        .back-to-paths:hover { color: var(--accent); }
 
         /* Model Selector */
         .model-chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
@@ -271,6 +295,7 @@
         
         .map-container { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; margin: 0 -24px; }
         .map-container.open { max-height: 360px; margin-bottom: 16px; margin-top: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        /* CSS Trick: Dark mode Leaflet Maps */
         .day-map { height: 280px; width: 100%; border-radius: 0; filter: invert(90%) hue-rotate(180deg) brightness(0.85) contrast(1.1); background: #000; }
         
         .events-wrap { padding-top: 20px; font-family: 'DM Sans', sans-serif; }
@@ -330,23 +355,8 @@
         .petal { position: absolute; background: linear-gradient(135deg, #a8c4d8, #6a90a8); border-radius: 12px 0 12px 0; animation: fall linear infinite; pointer-events: none; filter: blur(1px); }
         #blossom-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
 
-        /* ---- SAVE INDICATOR (Fixed to not block clicks) ---- */
-        #save-indicator {
-            position: fixed; bottom: 24px; left: 50%; z-index: 9999;
-            background: var(--bg-card); border: 1px solid var(--border); backdrop-filter: blur(8px);
-            border-radius: 100px; padding: 8px 16px;
-            font-size: 0.78rem; font-weight: 600; color: var(--accent); font-family: 'DM Sans', sans-serif;
-            display: flex; align-items: center; gap: 6px;
-            opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(20px); 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        #save-indicator.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
-        #save-indicator.error { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); }
-
         /* ---- RESPONSIVE MOBILE FIXES ---- */
         @media (max-width: 600px) {
-            .grimoire-wrapper { grid-template-columns: 1fr; gap: 16px; }
             .landing-card { padding: 24px 20px; }
             .header-title { font-size: 1.2rem; }
             .expense-total { font-size: 1.4rem; }
@@ -384,21 +394,15 @@
             <p class="frieren-quote">"A thousand years from now, someone will remember this moment."</p>
         </div>
 
-        <div id="landing-paths-container" class="grimoire-wrapper">
-            <div class="grimoire-card" onclick="window.showPlannerPortal()">
-                <i data-lucide="map-pinned"></i>
-                <div>
-                    <div class="grimoire-title">The Planner's Grimoire</div>
-                    <div class="grimoire-desc">Weave itineraries with ancient magic</div>
-                </div>
-            </div>
-            
-            <div class="grimoire-card" onclick="window.showLedgerPortal()">
-                <i data-lucide="scale"></i>
-                <div>
-                    <div class="grimoire-title">The Debt Ledger</div>
-                    <div class="grimoire-desc">Balance the scales of fellowship</div>
-                </div>
+        <div id="landing-paths-container" class="signpost-wrapper">
+            <div class="signpost-pole"></div>
+            <div class="signpost-signs">
+                <button class="sign-btn sign-left" onclick="window.showPlannerPortal()">
+                    <i data-lucide="map-pinned" style="width:20px; height:20px; color:#7ab8d0;"></i> The Planner's Grimoire
+                </button>
+                <button class="sign-btn sign-right" onclick="window.showLedgerPortal()">
+                    <i data-lucide="scale" style="width:20px; height:20px; color:#7ab8d0;"></i> The Debt Ledger
+                </button>
             </div>
         </div>
 
@@ -544,7 +548,6 @@
 </header>
 
 <main id="ledger-view" class="app-view-container">
-    
     <div class="ledger-tabs">
         <button class="tab-btn active" id="tabbtn-dash" onclick="window.switchLedgerTab('dash')">Overview</button>
         <button class="tab-btn" id="tabbtn-party" onclick="window.switchLedgerTab('party')">Party</button>
@@ -559,15 +562,12 @@
                 <canvas id="debtChart"></canvas>
             </div>
         </div>
-        
         <div class="glass-card">
             <h2 class="section-title">Trip Summary</h2>
             <div class="field-label">Total Spent</div>
             <div id="totalSpentDisplay" class="expense-total" style="margin-bottom:20px; font-family:'DM Sans', sans-serif;">0.00</div>
-            
             <div class="field-label">By Category</div>
             <div id="categorySummary"></div>
-            
             <div class="field-label" style="margin-top: 30px;">Who spent what?</div>
             <div id="personSummary"></div>
         </div>
@@ -598,21 +598,16 @@
                     <option value="Settlement">User paid User (Settlement)</option>
                     <option value="Other">Other</option>
                 </select>
-
                 <input type="text" id="expenseDesc" class="field-input" placeholder="What was it for?" required autocomplete="off">
                 <input type="number" id="expenseAmount" class="field-input" placeholder="Amount" step="0.01" required>
-                
                 <p style="margin: 15px 0 8px 0; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Who paid for it?</p>
                 <select id="expensePayer" class="select-input" required></select>
-                
                 <p style="margin: 15px 0 8px 0; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Who's splitting it?</p>
                 <div id="involvedUsersContainer" class="checkbox-group"></div>
-
                 <button type="submit" id="submitExpenseBtn" class="btn-primary">Save Expense</button>
                 <button type="button" class="btn-secondary" id="cancelEditBtn" style="display:none; width: 100%;" onclick="window.cancelEdit()">Cancel Edit</button>
             </form>
         </div>
-
         <div class="glass-card">
             <h2 class="section-title">Expense History</h2>
             <ul id="expenseLogList" class="ledger-ul"></ul>
@@ -626,7 +621,6 @@
             <button id="copySettlementsBtn" class="btn-primary" style="display:none; margin-top: 20px;" onclick="window.copySettlements()">Copy for Group Chat</button>
         </div>
     </div>
-
 </main>
 
 
@@ -676,9 +670,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const vertexAI = getVertexAI(app, { location: "global" });
-
-// Sign in anonymously to bypass strict Firestore rules if applicable
-signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
 
 // ============================================================
 //  SHARED STATE & UTILS
@@ -781,13 +772,11 @@ function parseJSON(text) {
 window.showPlannerPortal = function() {
     document.getElementById('landing-paths-container').style.display = 'none';
     document.getElementById('planner-portal').style.display = 'block';
-    window.fetchPlannerTrips();
 }
 
 window.showLedgerPortal = function() {
     document.getElementById('landing-paths-container').style.display = 'none';
     document.getElementById('ledger-portal').style.display = 'block';
-    window.fetchLedgerTrips();
 }
 
 window.backToPaths = function() {
@@ -844,21 +833,36 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modelSelect').value = e.target.dataset.value;
         });
     });
+});
 
-    const params = new URLSearchParams(window.location.search);
-    const pTrip = params.get('planner');
-    const lTrip = params.get('ledger');
+// ============================================================
+//  FIREBASE AUTH & INITIALIZATION
+// ============================================================
+signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
 
-    if (pTrip) {
-        document.getElementById('landing-paths-container').style.display = 'none';
-        document.getElementById('planner-portal').style.display = 'block';
-        window.loadPastTrip(pTrip); // Pass docId directly
-    } else if (lTrip) {
-        document.getElementById('landing-paths-container').style.display = 'none';
-        document.getElementById('ledger-portal').style.display = 'block';
+onAuthStateChanged(auth, user => {
+    if (user) {
+        // Once Auth is ready, pre-fetch lists from Firestore securely
+        window.fetchPlannerTrips();
         window.fetchLedgerTrips().then(() => {
-            if(window.ledgerTrips.some(t => t.id === lTrip)) window.openLedger(lTrip);
-            else window.showToast("Ledger not found.", "error");
+            // Check for Deep Links after data is fetched
+            const params = new URLSearchParams(window.location.search);
+            const pTrip = params.get('planner');
+            const lTrip = params.get('ledger');
+
+            if (pTrip) {
+                document.getElementById('landing-paths-container').style.display = 'none';
+                document.getElementById('planner-portal').style.display = 'block';
+                window.loadPastTrip(pTrip); 
+            } else if (lTrip) {
+                document.getElementById('landing-paths-container').style.display = 'none';
+                document.getElementById('ledger-portal').style.display = 'block';
+                if(window.ledgerTrips.some(t => t.id === lTrip)) {
+                    window.openLedger(lTrip);
+                } else {
+                    window.showToast("Ledger not found.", "error");
+                }
+            }
         });
     }
 });
@@ -899,7 +903,7 @@ window.fetchPlannerTrips = async function() {
             dropdown.disabled = false; document.getElementById('load-btn').disabled = false;
         } else { dropdown.innerHTML = '<option value="">No past memories found</option>'; }
     } catch (err) {
-        console.error(err);
+        console.error("Fetch Planner Error:", err);
         dropdown.innerHTML = '<option value="">Could not consult records</option>';
     }
 }
@@ -926,8 +930,8 @@ window.loadPastTrip = async function(forcedId = null) {
                 document.getElementById('planner-content').style.display = 'block';
                 window.initPlannerUI();
             }, 1500);
-        } else { window.showToast('Failed to load trip', 'error'); }
-    } catch (err) { window.showToast('Magic interrupted', 'error'); console.error(err); } 
+        } else { window.showToast('Failed to load trip: Record not found.', 'error'); }
+    } catch (err) { window.showToast('Magic interrupted. Check network or database rules.', 'error'); console.error(err); } 
     finally { window.hideLoading(); }
 }
 
@@ -973,7 +977,10 @@ window.generateTrip = async function() {
                 window.initPlannerUI();
             }, 1500);
         } else { window.showToast('Magic failed parsing', 'error'); }
-    } catch (err) { window.showToast('Magic interrupted', 'error'); console.error(err); } 
+    } catch (err) { 
+        window.showToast('Magic interrupted. Check network, API key, or Firebase rules.', 'error'); 
+        console.error("AI Gen Error:", err); 
+    } 
     finally { window.hideLoading(); }
 }
 
@@ -1199,6 +1206,7 @@ window.fetchLedgerTrips = async function() {
         msgEl.style.display = 'none';
         if (window.ledgerTrips.length === 0) { listEl.innerHTML = '<div class="empty-state-main" style="border:none;background:transparent;">No ledgers yet!</div>'; return; }
         
+        // Reverse array so oldest appear first per user request
         const sortedLedgers = window.ledgerTrips.reverse();
 
         sortedLedgers.forEach(trip => {
@@ -1214,7 +1222,7 @@ window.fetchLedgerTrips = async function() {
 
     } catch(err) {
         msgEl.innerHTML = '<span style="color:#ef4444;">Connection failed.</span>';
-        console.error(err);
+        console.error("Fetch Ledger Error:", err);
     }
 }
 
