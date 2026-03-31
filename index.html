@@ -58,6 +58,18 @@
         .toast.warning { background: rgba(245,158,11,0.1); color: #fcd34d; border-color: #fcd34d; backdrop-filter: blur(8px); }
         @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* ---- SAVE INDICATOR ---- */
+        #save-indicator {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 100px; padding: 8px 16px; display: flex; align-items: center; gap: 8px;
+            font-size: 0.8rem; font-weight: 600; color: var(--accent); font-family: 'DM Sans', sans-serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+            opacity: 0; transform: translateY(-10px); pointer-events: none; transition: all 0.3s ease;
+        }
+        #save-indicator.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        #save-indicator.error { color: var(--danger); border-color: var(--danger); }
+
         /* ============================================================
            FRIERENCRAFT SHARED UI ELEMENTS
            ============================================================ */
@@ -233,8 +245,8 @@
         .app-view-container { max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; display: none; }
         #ledger-view { max-width: 600px; }
 
-        /* ---- TABS FOR LEDGER ---- */
-        .ledger-tabs { display: flex; gap: 4px; background: var(--bg-input); border-radius: 12px; padding: 4px; margin-bottom: 24px; border: 1px solid var(--border); overflow-x: auto; }
+        /* ---- TABS FOR LEDGER & PORTALS ---- */
+        .ledger-tabs { display: flex; gap: 4px; background: var(--bg-input); border-radius: 12px; padding: 4px; border: 1px solid var(--border); overflow-x: auto; }
         .ledger-tabs::-webkit-scrollbar { display: none; }
         .tab-btn { flex: 1; text-align: center; padding: 10px 16px; border-radius: 8px; background: transparent; border: none; color: var(--text-muted); font-family: 'Cinzel', serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
         .tab-btn:hover { color: var(--text-main); }
@@ -409,8 +421,13 @@
         <div id="planner-portal" class="landing-card" style="display: none; margin-top: 1.5rem;">
             <button class="back-to-paths" onclick="window.backToPaths()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Back</button>
             
-            <div style="margin-bottom:24px;">
-                <p class="field-label">Open Grimoire (Saved Trips)</p>
+            <div class="ledger-tabs" style="margin-bottom: 24px;">
+                <button class="tab-btn active" id="ptab-load" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
+                <button class="tab-btn" id="ptab-new" onclick="window.switchPortalTab('planner', 'new')">Craft Journey</button>
+            </div>
+
+            <div id="planner-sec-load" class="tab-content active">
+                <p class="field-label">Saved Trips</p>
                 <div class="load-row">
                     <select id="saved-trips-dropdown" class="select-input" disabled>
                         <option value="">Fetching past memories…</option>
@@ -422,9 +439,7 @@
                 <div id="trips-status" style="margin-top:6px;"></div>
             </div>
 
-            <div class="divider"><span>or</span></div>
-
-            <div>
+            <div id="planner-sec-new" class="tab-content">
                 <p class="field-label">Craft New Journey</p>
                 <div style="display:flex;gap:12px;margin-bottom:12px;">
                     <div style="flex:1;">
@@ -450,7 +465,7 @@
                         <button type="button" class="model-chip" data-value="gemini-2.5-pro">2.5 PRO</button>
                         <button type="button" class="model-chip" data-value="gemini-3-flash-preview">3 FLASH (NEXT)</button>
                     </div>
-                    <input type="hidden" id="modelSelect" value="gemini-3-flash-preview">
+                    <input type="hidden" id="modelSelect" value="gemini-2.5-flash">
                 </div>
 
                 <button id="generate-btn" onclick="window.generateTrip()" class="btn-primary">
@@ -462,15 +477,17 @@
         <div id="ledger-portal" class="landing-card" style="display: none; margin-top: 1.5rem;">
             <button class="back-to-paths" onclick="window.backToPaths()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Back</button>
             
-            <div style="margin-bottom:24px;">
-                <p class="field-label">Open Ledger</p>
+            <div class="ledger-tabs" style="margin-bottom: 24px;">
+                <button class="tab-btn active" id="ltab-load" onclick="window.switchPortalTab('ledger', 'load')">Open Ledger</button>
+                <button class="tab-btn" id="ltab-new" onclick="window.switchPortalTab('ledger', 'new')">Start New</button>
+            </div>
+
+            <div id="ledger-sec-load" class="tab-content active">
                 <div id="ledgerLoadingMsg" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; font-family:'Crimson Pro',serif;">Fetching ledgers...</div>
                 <div id="ledgerList" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
-            <div class="divider"><span>or</span></div>
-
-            <div>
+            <div id="ledger-sec-new" class="tab-content">
                 <p class="field-label">Start New Ledger</p>
                 <form id="newLedgerForm" onsubmit="window.createLedger(event)">
                     <input type="text" id="ledgerName" placeholder="Trip Name (e.g., Bali 2026)" required autocomplete="off" class="field-input">
@@ -548,7 +565,7 @@
 </header>
 
 <main id="ledger-view" class="app-view-container">
-    <div class="ledger-tabs">
+    <div class="ledger-tabs" style="margin-bottom: 24px;">
         <button class="tab-btn active" id="tabbtn-dash" onclick="window.switchLedgerTab('dash')">Overview</button>
         <button class="tab-btn" id="tabbtn-party" onclick="window.switchLedgerTab('party')">Party</button>
         <button class="tab-btn" id="tabbtn-ledger" onclick="window.switchLedgerTab('ledger')">Ledger</button>
@@ -715,6 +732,20 @@ window.showLoading = function(msg) {
 }
 window.hideLoading = function() {
     document.getElementById('loading-wrap').classList.remove('show');
+}
+
+// ---- PORTAL TAB NAVIGATION SYSTEM ----
+window.switchPortalTab = function(portalType, section) {
+    const pfix = portalType === 'planner' ? 'ptab' : 'ltab';
+    const sfix = portalType === 'planner' ? 'planner-sec' : 'ledger-sec';
+
+    document.getElementById(`${pfix}-load`).classList.remove('active');
+    document.getElementById(`${pfix}-new`).classList.remove('active');
+    document.getElementById(`${pfix}-${section}`).classList.add('active');
+
+    document.getElementById(`${sfix}-load`).classList.remove('active');
+    document.getElementById(`${sfix}-new`).classList.remove('active');
+    document.getElementById(`${sfix}-${section}`).classList.add('active');
 }
 
 // ============================================================
