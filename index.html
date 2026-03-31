@@ -450,7 +450,7 @@
                         <button type="button" class="model-chip" data-value="gemini-2.5-pro">2.5 PRO</button>
                         <button type="button" class="model-chip" data-value="gemini-3-flash-preview">3 FLASH (NEXT)</button>
                     </div>
-                    <input type="hidden" id="modelSelect" value="gemini-3-flash-preview">
+                    <input type="hidden" id="modelSelect" value="gemini-2.5-flash">
                 </div>
 
                 <button id="generate-btn" onclick="window.generateTrip()" class="btn-primary">
@@ -720,39 +720,17 @@ window.hideLoading = function() {
 // ============================================================
 //  VERTEX AI CONFIGURATION
 // ============================================================
-const tripSchema = {
-  type: "OBJECT",
-  properties: {
-    overview: { type: "OBJECT", properties: { title: {type:"STRING"}, dates: {type:"STRING"}, pax: {type:"STRING"}, totalBudget: {type:"STRING"} } },
-    budget: { type: "ARRAY", items: { type: "OBJECT", properties: { item: {type:"STRING"}, cost: {type:"STRING"}, amount: {type:"NUMBER"}, icon: {type:"STRING"} } } },
-    locations: { type: "ARRAY", items: { type: "OBJECT", properties: { id: {type:"STRING"}, name: {type:"STRING"}, color: {type:"STRING"}, image: {type:"STRING"} } } },
-    itinerary: {
-      type: "ARRAY", items: {
-        type: "OBJECT", properties: {
-          day: {type:"NUMBER"}, date: {type:"STRING"}, location: {type:"STRING"}, title: {type:"STRING"},
-          events: {
-            type: "ARRAY", items: {
-              type: "OBJECT", properties: {
-                time: {type:"STRING"}, desc: {type:"STRING"}, icon: {type:"STRING"}, link: {type:"STRING"},
-                latlng: {type:"ARRAY", items: {type:"NUMBER"}}, expense: {type:"NUMBER"}
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-};
+// FIX: Removed the massive JSON schema overhead. We will pass this to the system prompt instead.
 
 async function callVertexAI(system, userPrompt, modelName) {
   const config = {
     systemInstruction: system,
     generationConfig: {
       responseMimeType: "application/json",
-      responseSchema: tripSchema
+      // FIX: responseSchema has been removed to drastically improve generation speed.
     }
   };
-  const model = getGenerativeModel(vertexAI, { model: modelName || 'gemini-3-flash-preview', ...config });
+  const model = getGenerativeModel(vertexAI, { model: modelName || 'gemini-2.5-flash', ...config });
   const result = await model.generateContent(userPrompt);
   const text = result?.response?.text ? result.response.text() : "";
   if (!text) throw new Error("No output generated.");
@@ -945,8 +923,28 @@ window.generateTrip = async function() {
 
     window.showLoading('Consulting the grimoires to map your journey…');
     try {
+        // FIX: Replaced the responseSchema enforcement with strict prompt instructions.
         const sys = `You are an expert travel planner. Create a highly detailed travel itinerary. 
         The trip dates are: ${dates}. Number of pax: ${pax}.
+        
+        Return ONLY valid JSON matching this exact structure:
+        {
+          "overview": { "title": "...", "dates": "...", "pax": "...", "totalBudget": "..." },
+          "budget": [ { "item": "...", "cost": "...", "amount": 0, "icon": "..." } ],
+          "locations": [ { "id": "lowercase-id", "name": "...", "color": "amber", "image": "url" } ],
+          "itinerary": [
+            {
+              "day": 1,
+              "date": "...",
+              "location": "lowercase-id",
+              "title": "...",
+              "events": [
+                { "time": "...", "desc": "...", "icon": "...", "link": "...", "latlng": [1.0, 1.0], "expense": 0 }
+              ]
+            }
+          ]
+        }
+        
         Rules:
         - "color" must be one of: amber, teal, rose, violet, sky, emerald, pink, orange, purple.
         - "id" inside locations must be lowercase letters with no spaces.
@@ -1124,7 +1122,7 @@ window.renderTimeline = function() {
         html += `<div class="day-card"><div class="day-header"><div><div class="day-label" style="color:var(--text-muted);">Day ${day.day} &bull; ${window.sanitizeText(day.date)}</div><div class="day-title">${window.sanitizeText(day.title)}</div></div><div class="day-chips"><div class="day-expense-chip" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</div>${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="map-toggle"><i data-lucide="map" style="width:11px;height:11px;"></i> Map</button>` : ''}</div></div>${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}<div class="events-wrap"><div class="timeline-rail">`;
         (day.events || []).forEach((event, idx) => {
             const safeLink = window.sanitizeURL(event.link); const rawDesc = event.desc || ''; const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>` : rawDesc;
-            html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"></div></div></div>`;
+            html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"></div></div></div></div>`;
         });
         html += `</div></div></div>`;
     });
