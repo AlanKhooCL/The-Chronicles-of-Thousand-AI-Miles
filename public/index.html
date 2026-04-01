@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journeys & Ledgers — Beyond Journey's End</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            /* Frieren Mystical Dark Theme */
+            --bg-base: #060a10;
+            --bg-card: rgba(10, 18, 28, 0.65);
+            --bg-card-hover: rgba(14, 24, 38, 0.85);
+            --bg-input: rgba(0, 0, 0, 0.4);
+            
+            --text-main: #c8d8e8;
+            --text-muted: #6a90a8;
+            --text-title: #ffffff;
+            
+            --accent: #7ab8d0;
+            --accent-glow: rgba(100, 180, 220, 0.2);
+            --border: rgba(100, 160, 200, 0.2);
+            
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: linear-gradient(160deg, #060a10 0%, #0e1a2a 40%, #0a1520 70%, #060e18 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        h1, h2, h3, .serif { font-family: 'Cinzel', serif; color: var(--text-title); }
+        .sans { font-family: 'DM Sans', sans-serif; }
+
+        /* ---- TOAST ---- */
+        #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+        .toast { padding: 10px 20px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: auto; animation: toastIn 0.3s ease forwards; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border); }
+        .toast.success { background: rgba(16,185,129,0.1); color: var(--success); border-color: var(--success); backdrop-filter: blur(8px); }
+        .toast.error   { background: rgba(239,68,68,0.1); color: var(--danger); border-color: var(--danger); backdrop-filter: blur(8px); }
+        .toast.info    { background: var(--bg-card); color: var(--accent); backdrop-filter: blur(8px); }
+        .toast.warning { background: rgba(245,158,11,0.1); color: #fcd34d; border-color: #fcd34d; backdrop-filter: blur(8px); }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ---- SAVE INDICATOR ---- */
+        #save-indicator {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 100px; padding: 8px 16px; display: flex; align-items: center; gap: 8px;
+            font-size: 0.8rem; font-weight: 600; color: var(--accent); font-family: 'DM Sans', sans-serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+            opacity: 0; transform: translateY(-10px); pointer-events: none; transition: all 0.3s ease;
+        }
+        #save-indicator.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        #save-indicator.error { color: var(--danger); border-color: var(--danger); }
+
+        /* ============================================================
+           FRIERENCRAFT SHARED UI ELEMENTS
+           ============================================================ */
+        .glass-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; backdrop-filter: blur(12px); 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(100,160,200,0.03);
+            padding: 24px; position: relative;
+        }
+
+        .field-label {
+            font-size: 0.65rem; font-weight: 600; letter-spacing: 0.15em;
+            text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: block; font-family: 'Cinzel', serif;
+        }
+
+        .field-input, .select-input {
+            width: 100%; border: 1px solid var(--border); border-radius: 8px;
+            padding: 11px 14px; font-size: 1.05rem; font-family: 'Crimson Pro', serif;
+            color: var(--text-main); background: var(--bg-input); transition: all 0.3s; outline: none; margin-bottom: 16px;
+        }
+        .field-input:focus, .select-input:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); background: rgba(0,0,0,0.6); }
+        .field-input::placeholder { color: #3a5870; font-style: italic; }
+        textarea.field-input { resize: none; }
+        .select-input option { background: var(--bg-base); color: var(--text-main); }
+        .select-input:disabled { opacity: 0.5; }
+
+        .btn-primary, .btn-secondary {
+            width: 100%; background: transparent; border: 1px solid #4a7090; color: #8ab8cc;
+            font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.25em; border-radius: 8px;
+            padding: 13px; cursor: pointer; transition: all 0.4s ease; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;
+        }
+        .btn-secondary { padding: 11px 20px; font-size: 0.85rem; letter-spacing: 0.15em; }
+        
+        .btn-primary::before, .btn-secondary::before {
+            content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(100,180,220,0.1), transparent);
+            transform: translateX(-100%); transition: transform 0.5s ease;
+        }
+        .btn-primary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
+            border-color: var(--accent); color: #c8e8f8; box-shadow: 0 0 20px var(--accent-glow); background: rgba(100,180,220,0.05);
+        }
+        .btn-primary:hover:not(:disabled)::before, .btn-secondary:hover:not(:disabled)::before { transform: translateX(100%); }
+        .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; border-color: #2a4050; color: #3a5870; }
+
+        .icon-btn {
+            background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-main);
+            display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+        }
+        .icon-btn:hover { background: var(--bg-card-hover); border-color: var(--accent); color: var(--accent); }
+        .icon-btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        .icon-btn.danger:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); }
+
+        .divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .divider span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); font-family: 'Cinzel', serif; }
+
+        /* ============================================================
+           LANDING OVERLAY & PORTALS
+           ============================================================ */
+        #ai-overlay {
+            position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-start; padding: 20px; overflow-y: auto; overflow-x: hidden;
+            transition: opacity 1.5s ease; background: var(--bg-base);
+        }
+        .overlay-scroll-wrapper { position: relative; z-index: 1; width: 100%; max-width: 600px; margin: auto; display: flex; flex-direction: column; align-items: center; padding: 40px 0; }
+        #title-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+        .frieren-rune { font-size: 1.4rem; color: #3a6070; letter-spacing: 1.5em; margin-left: 1.5em; z-index: 1; }
+        .frieren-logo {
+            font-family: 'Cinzel', serif; font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 600;
+            letter-spacing: 0.15em; background: linear-gradient(135deg, #a8c4d8 0%, #7eb8d4 30%, #c8e0f0 60%, #8ab8cc 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            filter: drop-shadow(0 0 40px rgba(150,210,240,0.3)); animation: titleGlow 3s ease-in-out infinite alternate;
+            z-index: 1; text-align: center; line-height: 1.1; margin-bottom: 0.2rem;
+        }
+        @keyframes titleGlow { from { filter: drop-shadow(0 0 20px rgba(150,210,240,0.2)); } to { filter: drop-shadow(0 0 60px rgba(150,210,240,0.5)); } }
+        .frieren-subtitle { font-style: italic; font-size: 1.1rem; color: var(--text-muted); letter-spacing: 0.3em; font-weight: 300; z-index: 1; text-align: center; }
+        .frieren-quote { font-style: italic; color: #4a6878; font-size: 0.95rem; text-align: center; max-width: 380px; line-height: 1.7; z-index: 1; margin-bottom: 8px; }
+
+        /* THE CROSSROADS - MYSTICAL SIGNPOST UI */
+        .signpost-wrapper {
+            position: relative; display: flex; flex-direction: column; align-items: center; 
+            margin-top: 3rem; z-index: 10; width: 100%;
+        }
+        .signpost-pole {
+            width: 12px; height: 100%; min-height: 220px;
+            background: linear-gradient(90deg, #0a1520, #1e3a50, #0a1520);
+            position: absolute; top: -10px; z-index: 0; border-radius: 6px 6px 0 0;
+            box-shadow: inset -2px 0 5px rgba(0,0,0,0.8), 0 0 15px rgba(100,180,220,0.1);
+            border-left: 1px solid rgba(100, 180, 220, 0.2);
+            border-right: 1px solid rgba(100, 180, 220, 0.2);
+        }
+        .signpost-signs {
+            display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 320px;
+            z-index: 1; position: relative; padding: 20px 0;
+        }
+        .sign-btn {
+            position: relative; width: 100%; 
+            background: linear-gradient(180deg, rgba(20, 32, 48, 0.9), rgba(10, 18, 28, 0.95));
+            border: 1px solid rgba(122, 184, 208, 0.4); 
+            color: #c8e0f0; font-family: 'Cinzel', serif; font-size: 1.05rem;
+            font-weight: 700; letter-spacing: 0.1em; padding: 18px 20px; cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease, box-shadow 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 15px rgba(122, 184, 208, 0.05);
+            backdrop-filter: blur(8px);
+        }
+        .sign-btn::after { /* Mystical glowing rivet */
+            content: ''; position: absolute; width: 8px; height: 8px; 
+            background: #a8c4d8; border-radius: 50%; top: 50%; transform: translateY(-50%); 
+            box-shadow: 0 0 10px #7ab8d0, inset 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        .sign-left {
+            clip-path: polygon(24px 0%, 100% 0%, 100% 100%, 24px 100%, 0% 50%);
+            padding-left: 36px; transform: rotate(-2deg);
+        }
+        .sign-left::after { right: 24px; }
+        .sign-left:hover { transform: rotate(-2deg) scale(1.05); box-shadow: 0 0 25px rgba(122, 184, 208, 0.3); border-color: #a8c4d8; color: #fff;}
+        
+        .sign-right {
+            clip-path: polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%);
+            padding-right: 36px; transform: rotate(2deg);
+        }
+        .sign-right::after { left: 24px; }
+        .sign-right:hover { transform: rotate(2deg) scale(1.05); box-shadow: 0 0 25px rgba(122, 184, 208, 0.3); border-color: #a8c4d8; color: #fff;}
+
+        .landing-card {
+            width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(100,160,200,0.03);
+            padding: 36px; position: relative; z-index: 1; display: none;
+        }
+
+        .back-to-paths {
+            position: absolute; top: -40px; left: 0; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; font-family: 'Cinzel', serif; letter-spacing: 0.1em; text-decoration: none; border: none; background: none;
+        }
+        .back-to-paths:hover { color: var(--accent); }
+
+        /* Model Selector */
+        .model-chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .model-chip {
+            background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px;
+            padding: 8px 12px; font-size: 0.65rem; font-weight: 600; color: var(--text-muted);
+            cursor: pointer; transition: all 0.3s; font-family: 'Cinzel', serif; letter-spacing: 0.05em; flex-grow: 1; text-align: center;
+        }
+        .model-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(100,180,220,0.05); }
+        .model-chip.active { background: rgba(100,180,220,0.15); color: #c8e8f8; border-color: var(--accent); box-shadow: inset 0 0 15px var(--accent-glow); }
+
+        .load-row { display: flex; gap: 10px; margin-bottom: 12px; }
+        .input-group { display: flex; gap: 12px; margin-bottom: 12px; }
+
+        /* Mystical Loading Spinner */
+        .loading-wrap { display: none; flex-direction: column; align-items: center; gap: 12px; margin-top: 28px; z-index: 10; }
+        .loading-wrap.show { display: flex; }
+        .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; box-shadow: 0 0 20px var(--accent-glow); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-msg { font-size: 0.95rem; color: var(--accent); font-family: 'Crimson Pro', serif; font-style: italic; letter-spacing: 0.05em; text-align: center; }
+
+        /* ============================================================
+           APP HEADERS & LAYOUT
+           ============================================================ */
+        .app-header {
+            background: rgba(6, 10, 16, 0.85); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 40; display: none;
+        }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 16px 20px; }
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .header-title { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 900; color: var(--text-title); line-height: 1.2; }
+        .header-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 6px; }
+        .meta-chip { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); font-family: 'DM Sans', sans-serif;}
+        .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+        .app-view-container { max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; display: none; }
+        #ledger-view { max-width: 600px; }
+
+        /* ---- TABS FOR LEDGER & PORTALS ---- */
+        .ledger-tabs { display: flex; gap: 4px; background: var(--bg-input); border-radius: 12px; padding: 4px; border: 1px solid var(--border); overflow-x: auto; }
+        .ledger-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex: 1; text-align: center; padding: 10px 16px; border-radius: 8px; background: transparent; border: none; color: var(--text-muted); font-family: 'Cinzel', serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { background: var(--bg-card-hover); color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-bottom: 1px solid var(--accent); }
+        
+        .tab-content { display: none; animation: slideUp 0.3s ease-out; }
+        .tab-content.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ============================================================
+           PLANNER SPECIFIC STYLES
+           ============================================================ */
+        #filter-nav { display: flex; overflow-x: auto; gap: 8px; margin-top: 14px; padding-bottom: 2px; }
+        #filter-nav::-webkit-scrollbar { display: none; }
+        .filter-btn { padding: 7px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; transition: all 0.2s; background: var(--bg-input); color: var(--text-main); font-family: 'DM Sans', sans-serif; }
+        .filter-btn:hover { background: var(--bg-card); border-color: var(--accent); }
+        .filter-btn.active { background: rgba(100,180,220,0.15); color: #fff; border-color: var(--accent); }
+
+        .section-title { font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: 700; color: var(--text-title); display: flex; align-items: center; gap: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+
+        .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
+        .budget-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; backdrop-filter: blur(8px); }
+        .budget-card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+        .budget-icon { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 8px; color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .budget-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 2px; font-family: 'Cinzel', serif; }
+        .budget-amount-wrap { display: flex; align-items: center; font-family: 'DM Sans', sans-serif; }
+        .budget-currency { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-right: 2px; }
+        .budget-amount-input { border: none; outline: none; background: transparent; font-size: 1.05rem; font-weight: 700; color: var(--text-main); width: 100%; font-family: 'DM Sans', sans-serif; padding: 0; }
+        .budget-amount-input:focus { color: var(--accent); }
+
+        .expense-summary { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 28px; backdrop-filter: blur(8px); }
+        .expense-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+        .expense-total { font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900; color: var(--text-title); }
+        .expense-currency { font-size: 0.85rem; font-weight: 400; color: var(--text-muted); margin-left: 4px; font-family: 'DM Sans', sans-serif; }
+        .progress-bar-track { background: var(--bg-input); border-radius: 100px; height: 6px; margin: 12px 0; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 0.6s ease; box-shadow: 0 0 10px var(--accent); }
+        .loc-breakdown { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; font-family: 'DM Sans', sans-serif; }
+        .loc-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .loc-name { font-weight: 500; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+        .loc-amount { font-weight: 700; color: var(--text-title); }
+        
+        .zeroise-btn { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; font-family: 'Cinzel', serif; }
+        .zeroise-btn:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); color: var(--danger); }
+
+        .loc-hero { width: 100%; height: 220px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 28px; position: relative; }
+        .loc-hero img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8); }
+        .loc-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(6,10,16,0.9) 0%, transparent 60%); display: flex; align-items: flex-end; padding: 24px; }
+        .loc-hero-name { font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        .day-header { padding: 0 0 16px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .day-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; font-family: 'Cinzel', serif;}
+        .day-title { font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 700; color: var(--text-title); }
+        .day-chips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .day-expense-chip { font-size: 0.8rem; font-weight: 600; font-family: 'DM Sans', sans-serif; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; color: var(--text-main); }
+        .map-toggle { font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; cursor: pointer; background: var(--bg-input); color: var(--text-muted); transition: all 0.2s; display: flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; }
+        .map-toggle:hover { background: var(--bg-card-hover); color: var(--accent); border-color: var(--accent); }
+        .map-toggle.open { background: rgba(100,180,220,0.15); color: #fff; border-color: var(--accent); }
+        
+        .map-container { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; margin: 0 -24px; }
+        .map-container.open { max-height: 360px; margin-bottom: 16px; margin-top: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        /* CSS Trick: Dark mode Leaflet Maps */
+        .day-map { height: 280px; width: 100%; border-radius: 0; filter: invert(90%) hue-rotate(180deg) brightness(0.85) contrast(1.1); background: #000; }
+        
+        .events-wrap { padding-top: 20px; font-family: 'DM Sans', sans-serif; }
+        .timeline-rail { border-left: 2px solid var(--border); margin-left: 10px; padding-left: 0; display: flex; flex-direction: column; gap: 24px; }
+        .event-item { position: relative; padding-left: 28px; }
+        .event-dot { position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg-base); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; transition: border-color 0.2s; }
+        .event-dot svg { width: 9px; height: 9px; }
+        .event-row { display: flex; align-items: flex-start; gap: 12px; }
+        .event-time { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); min-width: 64px; padding-top: 3px; white-space: nowrap; }
+        .event-body { flex: 1; }
+        .event-name { font-size: 0.95rem; font-weight: 400; color: var(--text-main); line-height: 1.5; }
+        .event-name a { color: var(--accent); text-decoration: none; }
+        .event-name a:hover { text-decoration: underline; text-shadow: 0 0 8px var(--accent-glow); }
+        .expense-input-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .expense-currency-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+        .expense-field { width: 72px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 0.85rem; text-align: right; outline: none; background: var(--bg-input); color: var(--text-main); font-family: 'DM Sans', sans-serif; font-weight: 600; transition: border-color 0.2s; }
+        .expense-field:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+        /* ============================================================
+           LEDGER APP SPECIFIC STYLES
+           ============================================================ */
+        .empty-state-main { text-align: center; padding: 40px 20px; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 12px; margin-bottom: 20px; background: var(--bg-input); font-family: 'DM Sans', sans-serif; }
+        
+        .ledger-ul { list-style-type: none; padding: 0; margin: 0; font-family: 'DM Sans', sans-serif;}
+        .ledger-li { padding: 16px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
+        .ledger-li:last-child { border-bottom: none; padding-bottom: 0; }
+        
+        .settlement-amount { font-weight: 600; color: var(--text-main); background: var(--bg-input); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-variant-numeric: tabular-nums;}
+        .settle-action-btn { background-color: rgba(16,185,129,0.1); color: var(--success); border: 1px solid var(--success); padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.2s;}
+        .settle-action-btn:hover { background-color: var(--success); color: #fff; box-shadow: 0 0 15px rgba(16,185,129,0.4); }
+
+        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 20px 0; padding: 16px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border); font-family: 'DM Sans', sans-serif;}
+        .checkbox-group label { display: flex; align-items: center; cursor: pointer; color: var(--text-main); font-weight: 500; font-size: 0.95rem;}
+        .checkbox-group input { width: auto; margin: 0 10px 0 0; accent-color: var(--accent); transform: scale(1.1); }
+
+        .chart-container { position: relative; height: 220px; width: 100%; margin-bottom: 10px; overflow: visible; }
+        @keyframes panicShake { 0% { transform: translate(0, 0); } 25% { transform: translate(var(--shake-intensity), calc(var(--shake-intensity) * -0.5)); } 50% { transform: translate(calc(var(--shake-intensity) * -1), var(--shake-intensity)); } 75% { transform: translate(calc(var(--shake-intensity) * 0.5), calc(var(--shake-intensity) * -1)); } 100% { transform: translate(0, 0); } }
+        .vibrating-chart { animation-name: panicShake; animation-iteration-count: infinite; animation-timing-function: linear; will-change: transform; }
+
+        /* ---- MODALS ---- */
+        .fixed-modal { position: fixed; inset: 0; background: rgba(6,10,16,0.8); z-index: 110; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
+        .fixed-modal.show { display: flex; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-card { background: var(--bg-base); width: 100%; max-width: 480px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 20px var(--accent-glow); padding: 28px; position: relative; }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.15s; }
+        .modal-close:hover { border-color: var(--accent); color: var(--accent); }
+        
+        .delete-confirm-wrap { display: flex; gap: 8px; }
+        .confirm-yes { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 16px; font-weight: 600; font-size: 0.85rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;}
+        .confirm-yes:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px rgba(239,68,68,0.4); }
+        .confirm-no { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-main); font-family: 'DM Sans', sans-serif; transition: all 0.2s;}
+        .confirm-no:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ---- PETALS ---- */
+        @keyframes fall { 0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { transform: translate3d(15vw, 110vh, 0) rotate(360deg); opacity: 0; } }
+        .petal { position: absolute; background: linear-gradient(135deg, #a8c4d8, #6a90a8); border-radius: 12px 0 12px 0; animation: fall linear infinite; pointer-events: none; filter: blur(1px); }
+        #blossom-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
+
+        /* ---- RESPONSIVE MOBILE FIXES ---- */
+        @media (max-width: 600px) {
+            .landing-card { padding: 24px 20px; }
+            .header-title { font-size: 1.2rem; }
+            .expense-total { font-size: 1.4rem; }
+            .load-row { flex-direction: column; }
+            .load-row .btn-secondary { width: 100%; padding: 13px; }
+            .budget-grid { grid-template-columns: 1fr; } 
+            .event-row { gap: 8px; }
+            .expense-field { width: 64px; }
+            .frieren-logo { font-size: 2.2rem; }
+            .frieren-quote { font-size: 0.85rem; padding: 0 10px; }
+            .checkbox-group { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="save-indicator">
+    <i data-lucide="cloud" style="width:14px;height:14px;"></i>
+    <span id="save-indicator-text">Saving...</span>
+</div>
+
+<div id="blossom-container"></div>
+
+<div id="ai-overlay">
+    <canvas id="title-canvas"></canvas>
+
+    <div class="overlay-scroll-wrapper">
+        <div style="z-index:1; display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-top:10px;">
+            <div class="frieren-rune">✦ ✦ ✦</div>
+            <div class="frieren-logo">Journeys & Ledgers</div>
+            <div class="frieren-subtitle">beyond journey's end</div>
+            <div style="height:1px; width:200px; background:linear-gradient(90deg,transparent,#2a5060,transparent); margin:0.5rem 0;"></div>
+            <p class="frieren-quote">"A thousand years from now, someone will remember this moment."</p>
+        </div>
+
+        <div id="landing-paths-container" class="signpost-wrapper">
+            <div class="signpost-pole"></div>
+            <div class="signpost-signs">
+                <button class="sign-btn sign-left" onclick="window.showPlannerPortal()">
+                    <i data-lucide="map-pinned" style="width:20px; height:20px; color:#7ab8d0;"></i> The Planner's Grimoire
+                </button>
+                <button class="sign-btn sign-right" onclick="window.showLedgerPortal()">
+                    <i data-lucide="scale" style="width:20px; height:20px; color:#7ab8d0;"></i> The Debt Ledger
+                </button>
+            </div>
+        </div>
+
+        <div id="planner-portal" class="landing-card" style="display: none; margin-top: 1.5rem;">
+            <button class="back-to-paths" onclick="window.backToPaths()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Back</button>
+            
+            <div class="ledger-tabs" style="margin-bottom: 24px;">
+                <button class="tab-btn active" id="ptab-load" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
+                <button class="tab-btn" id="ptab-new" onclick="window.switchPortalTab('planner', 'new')">Craft Journey</button>
+            </div>
+
+            <div id="planner-sec-load" class="tab-content active">
+                <p class="field-label">Saved Trips</p>
+                <div class="load-row">
+                    <select id="saved-trips-dropdown" class="select-input" disabled>
+                        <option value="">Fetching past memories…</option>
+                    </select>
+                    <button id="load-btn" onclick="window.loadPastTrip()" class="btn-secondary" disabled>
+                        <i data-lucide="book-open" style="width:15px;height:15px;"></i> OPEN
+                    </button>
+                </div>
+                <div id="trips-status" style="margin-top:6px;"></div>
+            </div>
+
+            <div id="planner-sec-new" class="tab-content">
+                <p class="field-label">Craft New Journey</p>
+                <div style="display:flex;gap:12px;margin-bottom:12px;">
+                    <div style="flex:1;">
+                        <label class="field-label" style="font-size: 0.55rem; opacity: 0.8;">Date Range</label>
+                        <input type="text" id="trip-dates" placeholder="Oct 1 – Oct 10" class="field-input">
+                    </div>
+                    <div style="width:90px;">
+                        <label class="field-label" style="font-size: 0.55rem; opacity: 0.8;">Pax</label>
+                        <input type="number" id="trip-pax" placeholder="2" min="1" class="field-input">
+                    </div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <label class="field-label" style="font-size: 0.55rem; opacity: 0.8;">Your Trip Idea</label>
+                    <textarea id="trip-prompt" class="field-input" style="height:90px;" placeholder="A foodie trip to Penang focusing on hawker centres..."></textarea>
+                </div>
+
+                <div class="glass-card" style="padding: 16px; margin-bottom: 16px; background: rgba(0,0,0,0.2);">
+                    <p class="field-label" style="font-size: 0.55rem; opacity: 0.8; margin-bottom: 8px;">> Select Magic Engine:</p>
+                    <div class="model-chip-group">
+                        <button type="button" class="model-chip" data-value="gemini-2.0-flash">2.0 FLASH</button>
+                        <button type="button" class="model-chip active" data-value="gemini-2.5-flash">2.5 FLASH</button>
+                        <button type="button" class="model-chip" data-value="gemini-2.5-pro">2.5 PRO</button>
+                        <button type="button" class="model-chip" data-value="gemini-3-flash-preview">3 FLASH (NEXT)</button>
+                    </div>
+                    <input type="hidden" id="modelSelect" value="gemini-2.5-flash">
+                </div>
+
+                <button id="generate-btn" onclick="window.generateTrip()" class="btn-primary">
+                    <i data-lucide="sparkles" style="width:16px;height:16px;"></i> BEGIN JOURNEY
+                </button>
+            </div>
+        </div>
+
+        <div id="ledger-portal" class="landing-card" style="display: none; margin-top: 1.5rem;">
+            <button class="back-to-paths" onclick="window.backToPaths()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Back</button>
+            
+            <div class="ledger-tabs" style="margin-bottom: 24px;">
+                <button class="tab-btn active" id="ltab-load" onclick="window.switchPortalTab('ledger', 'load')">Open Ledger</button>
+                <button class="tab-btn" id="ltab-new" onclick="window.switchPortalTab('ledger', 'new')">Start New</button>
+            </div>
+
+            <div id="ledger-sec-load" class="tab-content active">
+                <div id="ledgerLoadingMsg" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; font-family:'Crimson Pro',serif;">Fetching ledgers...</div>
+                <div id="ledgerList" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+
+            <div id="ledger-sec-new" class="tab-content">
+                <p class="field-label">Start New Ledger</p>
+                <form id="newLedgerForm" onsubmit="window.createLedger(event)">
+                    <input type="text" id="ledgerName" placeholder="Trip Name (e.g., Bali 2026)" required autocomplete="off" class="field-input">
+                    <div class="input-group">
+                        <select id="ledgerCurrency" class="select-input" required>
+                            <option value="S$">SGD (S$)</option>
+                            <option value="$">USD ($)</option>
+                            <option value="HK$">HKD (HK$)</option>
+                            <option value="MOP$">MOP (MOP$)</option>
+                            <option value="¥">CNY (¥)</option>
+                            <option value="€">EUR (€)</option>
+                            <option value="£">GBP (£)</option>
+                            <option value="¥">JPY (¥)</option>
+                            <option value="RM">MYR (RM)</option>
+                            <option value="฿">THB (฿)</option>
+                        </select>
+                        <button type="submit" class="btn-primary" style="margin-bottom:0;">Create Ledger</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="loading-wrap" id="loading-wrap">
+            <div class="spinner"></div>
+            <p class="loading-msg" id="loading-message">Consulting the grimoires…</p>
+        </div>
+    </div>
+</div>
+
+<header id="main-header" class="app-header">
+    <div class="header-inner">
+        <div class="header-top">
+            <div>
+                <div class="header-title" id="header-title"></div>
+                <div class="header-meta" id="header-meta"></div>
+            </div>
+            <div class="header-actions">
+                <button onclick="window.toggleChatModal()" class="icon-btn">
+                    <i data-lucide="pen-line" style="width:14px;height:14px;"></i>
+                    <span style="display:none;" id="ai-edit-label">AI Edit</span>
+                </button>
+                <button onclick="window.copyPlannerLink()" class="icon-btn">
+                    <i data-lucide="link" style="width:14px;height:14px;"></i>
+                </button>
+                <button onclick="window.openDeleteModal()" class="icon-btn danger">
+                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+                <button onclick="window.softReset()" class="icon-btn">
+                    <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+                </button>
+            </div>
+        </div>
+        <div id="filter-nav"></div>
+    </div>
+</header>
+<main id="planner-content" class="app-view-container"></main>
+
+<header id="ledger-header" class="app-header">
+    <div class="header-inner" style="max-width: 600px;">
+        <div class="header-top" style="align-items: center;">
+            <div class="header-title" id="ledger-header-title">Ledger</div>
+            <div class="header-actions">
+                <button onclick="window.copyLedgerLink()" class="icon-btn">
+                    <i data-lucide="link" style="width:14px;height:14px;"></i>
+                </button>
+                <button onclick="window.deleteLedger()" class="icon-btn danger">
+                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+                <button onclick="window.softReset()" class="icon-btn">
+                    <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main id="ledger-view" class="app-view-container">
+    <div class="ledger-tabs" style="margin-bottom: 24px;">
+        <button class="tab-btn active" id="tabbtn-dash" onclick="window.switchLedgerTab('dash')">Overview</button>
+        <button class="tab-btn" id="tabbtn-party" onclick="window.switchLedgerTab('party')">Party</button>
+        <button class="tab-btn" id="tabbtn-ledger" onclick="window.switchLedgerTab('ledger')">Ledger</button>
+        <button class="tab-btn" id="tabbtn-settle" onclick="window.switchLedgerTab('settle')">Settle</button>
+    </div>
+
+    <div id="tab-dash" class="tab-content active">
+        <div class="glass-card" style="margin-bottom: 20px;">
+            <div class="field-label">Total Unpaid Debt</div>
+            <div class="chart-container" id="chartWrapper">
+                <canvas id="debtChart"></canvas>
+            </div>
+        </div>
+        <div class="glass-card">
+            <h2 class="section-title">Trip Summary</h2>
+            <div class="field-label">Total Spent</div>
+            <div id="totalSpentDisplay" class="expense-total" style="margin-bottom:20px; font-family:'DM Sans', sans-serif;">0.00</div>
+            <div class="field-label">By Category</div>
+            <div id="categorySummary"></div>
+            <div class="field-label" style="margin-top: 30px;">Who spent what?</div>
+            <div id="personSummary"></div>
+        </div>
+    </div>
+
+    <div id="tab-party" class="tab-content">
+        <div class="glass-card">
+            <h2 class="section-title">Who's in?</h2>
+            <form id="addUserForm" class="input-group" style="margin-bottom: 10px;" onsubmit="window.addUser(event)">
+                <input type="text" id="userName" class="field-input" placeholder="Enter name" required autocomplete="off" style="flex: 2; margin-bottom:0;">
+                <button type="submit" class="btn-primary" style="flex: 1; margin-bottom:0;">Add</button>
+            </form>
+            <ul id="userList" class="ledger-ul"></ul>
+        </div>
+    </div>
+
+    <div id="tab-ledger" class="tab-content">
+        <div class="glass-card" id="expenseSection" style="margin-bottom: 20px;">
+            <h2 class="section-title" id="expenseFormTitle">Add an Expense</h2>
+            <form id="addExpenseForm" onsubmit="window.saveExpense(event)">
+                <select id="expenseCategory" class="select-input" required>
+                    <option value="" disabled selected>-- Choose Category --</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Accommodation">Accommodation</option>
+                    <option value="Food & Drinks">Food & Drinks</option>
+                    <option value="Activities">Activities</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Settlement">User paid User (Settlement)</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="text" id="expenseDesc" class="field-input" placeholder="What was it for?" required autocomplete="off">
+                <input type="number" id="expenseAmount" class="field-input" placeholder="Amount" step="0.01" required>
+                <p style="margin: 15px 0 8px 0; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Who paid for it?</p>
+                <select id="expensePayer" class="select-input" required></select>
+                <p style="margin: 15px 0 8px 0; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Who's splitting it?</p>
+                <div id="involvedUsersContainer" class="checkbox-group"></div>
+                <button type="submit" id="submitExpenseBtn" class="btn-primary">Save Expense</button>
+                <button type="button" class="btn-secondary" id="cancelEditBtn" style="display:none; width: 100%;" onclick="window.cancelEdit()">Cancel Edit</button>
+            </form>
+        </div>
+        <div class="glass-card">
+            <h2 class="section-title">Expense History</h2>
+            <ul id="expenseLogList" class="ledger-ul"></ul>
+        </div>
+    </div>
+
+    <div id="tab-settle" class="tab-content">
+        <div class="glass-card">
+            <h2 class="section-title">Settle Up</h2>
+            <ul id="settlementList" class="ledger-ul"></ul>
+            <button id="copySettlementsBtn" class="btn-primary" style="display:none; margin-top: 20px;" onclick="window.copySettlements()">Copy for Group Chat</button>
+        </div>
+    </div>
+</main>
+
+
+<div id="ai-chat-modal" class="fixed-modal">
+    <div class="modal-card">
+        <button class="modal-close" onclick="window.toggleChatModal()"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+        <p class="field-label">AI Editor</p>
+        <div class="modal-title">Edit Itinerary</div>
+        <div class="modal-subtitle">Ask Gemini to change anything — "Switch day 2 lunch to sushi", "Make day 3 all shopping", "Find a cheaper hotel".</div>
+        <textarea id="edit-prompt" class="field-input" style="height:110px;margin-bottom:14px;" placeholder="Your instructions…"></textarea>
+        <button id="submit-edit-btn" onclick="window.submitEdit()" class="btn-primary">
+            <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Update Itinerary
+        </button>
+        <p id="chat-loading" style="display:none;text-align:center;font-size:0.82rem;color:var(--accent);margin-top:12px;font-style:italic;">Rewriting itinerary…</p>
+    </div>
+</div>
+
+<div id="delete-modal" class="fixed-modal">
+    <div class="modal-card" style="max-width:360px; text-align: center;">
+        <div class="modal-title" style="margin-bottom:8px;">Erase Journey?</div>
+        <p id="delete-modal-msg" style="font-size:0.9rem;color:var(--text-muted);margin-bottom:24px; font-family: 'DM Sans', sans-serif;"></p>
+        <div class="delete-confirm-wrap" style="justify-content: center;">
+            <button class="confirm-no" onclick="window.closeDeleteModal()">Cancel</button>
+            <button class="confirm-yes" onclick="window.confirmDeletePlanner()">Erase Forever</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+// Import Firebase SDKs
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getVertexAI, getGenerativeModel } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-vertexai.js";
+
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyB80OS8Lh0xDHhWl95PphjN1B1WiOoK33M",
+  authDomain: "ai-study-party.firebaseapp.com",
+  projectId: "ai-study-party",
+  storageBucket: "ai-study-party.firebasestorage.app",
+  messagingSenderId: "583546365173",
+  appId: "1:583546365173:web:dd2fbec4ec4d20380951bc"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const vertexAI = getVertexAI(app, { location: "global" });
+
+// ============================================================
+//  SHARED STATE & UTILS
+// ============================================================
+let particlesActive = true;
+
+window.showToast = function(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    const icons = { success: 'check-circle', error: 'x-circle', info: 'info', warning: 'alert-triangle' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:14px;height:14px;flex-shrink:0;"></i> ${window.sanitizeText(message)}`;
+    container.appendChild(toast);
+    lucide.createIcons({ nodes: [toast] });
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+window.showSaveIndicator = function(state = 'saving') {
+    const el = document.getElementById('save-indicator');
+    const txt = document.getElementById('save-indicator-text');
+    el.classList.remove('error');
+    if (state === 'saving') { txt.textContent = 'Saving…'; el.classList.add('show'); } 
+    else if (state === 'saved') { txt.textContent = 'Saved'; setTimeout(() => el.classList.remove('show'), 1800); } 
+    else if (state === 'error') { el.classList.add('error'); txt.textContent = 'Save failed'; setTimeout(() => el.classList.remove('show'), 3000); }
+}
+
+window.sanitizeText = function(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+window.sanitizeURL = function(url) {
+    if (!url) return null;
+    try { const u = new URL(url); if (u.protocol === 'http:' || u.protocol === 'https:') return url; } catch (_) {}
+    return null;
+}
+
+window.showLoading = function(msg) {
+    document.getElementById('loading-wrap').classList.add('show');
+    document.getElementById('loading-message').textContent = msg;
+}
+window.hideLoading = function() {
+    document.getElementById('loading-wrap').classList.remove('show');
+}
+
+// ---- PORTAL TAB NAVIGATION SYSTEM ----
+window.switchPortalTab = function(portalType, section) {
+    const pfix = portalType === 'planner' ? 'ptab' : 'ltab';
+    const sfix = portalType === 'planner' ? 'planner-sec' : 'ledger-sec';
+
+    document.getElementById(`${pfix}-load`).classList.remove('active');
+    document.getElementById(`${pfix}-new`).classList.remove('active');
+    document.getElementById(`${pfix}-${section}`).classList.add('active');
+
+    document.getElementById(`${sfix}-load`).classList.remove('active');
+    document.getElementById(`${sfix}-new`).classList.remove('active');
+    document.getElementById(`${sfix}-${section}`).classList.add('active');
+}
+
+// ============================================================
+//  VERTEX AI CONFIGURATION
+// ============================================================
+const tripSchema = {
+  type: "OBJECT",
+  properties: {
+    overview: { type: "OBJECT", properties: { title: {type:"STRING"}, dates: {type:"STRING"}, pax: {type:"STRING"}, totalBudget: {type:"STRING"} } },
+    budget: { type: "ARRAY", items: { type: "OBJECT", properties: { item: {type:"STRING"}, cost: {type:"STRING"}, amount: {type:"NUMBER"}, icon: {type:"STRING"} } } },
+    locations: { type: "ARRAY", items: { type: "OBJECT", properties: { id: {type:"STRING"}, name: {type:"STRING"}, color: {type:"STRING"}, image: {type:"STRING"} } } },
+    itinerary: {
+      type: "ARRAY", items: {
+        type: "OBJECT", properties: {
+          day: {type:"NUMBER"}, date: {type:"STRING"}, location: {type:"STRING"}, title: {type:"STRING"},
+          events: {
+            type: "ARRAY", items: {
+              type: "OBJECT", properties: {
+                time: {type:"STRING"}, desc: {type:"STRING"}, icon: {type:"STRING"}, link: {type:"STRING"},
+                latlng: {type:"ARRAY", items: {type:"NUMBER"}}, expense: {type:"NUMBER"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+async function callVertexAI(system, userPrompt, modelName) {
+  const config = {
+    systemInstruction: system,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: tripSchema
+    }
+  };
+  const model = getGenerativeModel(vertexAI, { model: modelName || 'gemini-3-flash-preview', ...config });
+  const result = await model.generateContent(userPrompt);
+  const text = result?.response?.text ? result.response.text() : "";
+  if (!text) throw new Error("No output generated.");
+  return text;
+}
+
+function parseJSON(text) {
+  try { return JSON.parse(text); } catch(e) {}
+  const clean = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
+  try { return JSON.parse(clean); } catch(e) {}
+  return null;
+}
+
+// ============================================================
+//  LANDING PAGE ROUTING
+// ============================================================
+window.showPlannerPortal = function() {
+    document.getElementById('landing-paths-container').style.display = 'none';
+    document.getElementById('planner-portal').style.display = 'block';
+}
+
+window.showLedgerPortal = function() {
+    document.getElementById('landing-paths-container').style.display = 'none';
+    document.getElementById('ledger-portal').style.display = 'block';
+}
+
+window.backToPaths = function() {
+    document.getElementById('planner-portal').style.display = 'none';
+    document.getElementById('ledger-portal').style.display = 'none';
+    document.getElementById('landing-paths-container').style.display = 'flex';
+}
+
+window.hideOverlay = function() {
+    particlesActive = false;
+    const overlay = document.getElementById('ai-overlay');
+    overlay.style.opacity = '0';
+    setTimeout(() => { overlay.style.display = 'none'; }, 1500);
+}
+
+window.softReset = function() {
+    window.tripData = null; window.activeFilter = 'all';
+    Object.values(window.mapInstances).forEach(m => { try { m.remove(); } catch(_){} });
+    window.mapInstances = {}; window.openMaps.clear();
+    document.getElementById('planner-content').style.display = 'none';
+    document.getElementById('planner-content').innerHTML = '';
+    document.getElementById('main-header').style.display = 'none';
+
+    window.activeLedgerId = null;
+    document.getElementById('ledger-view').style.display = 'none';
+    document.getElementById('ledger-header').style.display = 'none';
+
+    const url = new URL(window.location);
+    url.searchParams.delete('planner');
+    url.searchParams.delete('ledger');
+    window.history.pushState({}, '', url);
+
+    const overlay = document.getElementById('ai-overlay');
+    overlay.style.display = 'flex';
+    window.backToPaths();
+    setTimeout(() => {
+        overlay.style.opacity = '1';
+        particlesActive = true;
+        window.initTitleParticles();
+    }, 10);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+    window.initTitleParticles();
+
+    if (window.innerWidth > 500) { document.getElementById('ai-edit-label').style.display = 'inline'; }
+
+    document.querySelectorAll('.model-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            const group = e.target.closest('.model-chip-group');
+            group.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('modelSelect').value = e.target.dataset.value;
+        });
+    });
+});
+
+// ============================================================
+//  FIREBASE AUTH & INITIALIZATION
+// ============================================================
+signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
+
+onAuthStateChanged(auth, user => {
+    if (user) {
+        // Once Auth is ready, pre-fetch lists from Firestore securely
+        window.fetchPlannerTrips();
+        window.fetchLedgerTrips().then(() => {
+            // Check for Deep Links after data is fetched
+            const params = new URLSearchParams(window.location.search);
+            const pTrip = params.get('planner');
+            const lTrip = params.get('ledger');
+
+            if (pTrip) {
+                document.getElementById('landing-paths-container').style.display = 'none';
+                document.getElementById('planner-portal').style.display = 'block';
+                window.loadPastTrip(pTrip); 
+            } else if (lTrip) {
+                document.getElementById('landing-paths-container').style.display = 'none';
+                document.getElementById('ledger-portal').style.display = 'block';
+                if(window.ledgerTrips.some(t => t.id === lTrip)) {
+                    window.openLedger(lTrip);
+                } else {
+                    window.showToast("Ledger not found.", "error");
+                }
+            }
+        });
+    }
+});
+
+
+// ============================================================
+//  APP 1: PLANNER LOGIC (FIRESTORE + VERTEX)
+// ============================================================
+window.tripData = null;
+window.activeFilter = 'all';
+window.openMaps = new Set();
+window.mapInstances = {};
+window.saveTimeout = null;
+
+const themeStyles = {
+    amber: { dot: '#d97706', label: '#92400e', mapMarker: '#d97706' },
+    teal: { dot: '#0d9488', label: '#115e59', mapMarker: '#0d9488' },
+    rose: { dot: '#e11d48', label: '#9f1239', mapMarker: '#e11d48' },
+    violet: { dot: '#7c3aed', label: '#4c1d95', mapMarker: '#7c3aed' },
+    sky: { dot: '#0284c7', label: '#0c4a6e', mapMarker: '#0284c7' },
+    emerald: { dot: '#059669', label: '#064e3b', mapMarker: '#059669' },
+    pink: { dot: '#db2777', label: '#831843', mapMarker: '#db2777' },
+    orange: { dot: '#ea580c', label: '#7c2d12', mapMarker: '#ea580c' },
+    purple: { dot: '#9333ea', label: '#581c87', mapMarker: '#9333ea' },
+};
+window.getTheme = function(colorKey) { return themeStyles[colorKey] || themeStyles.amber; }
+
+window.fetchPlannerTrips = async function() {
+    const dropdown = document.getElementById('saved-trips-dropdown');
+    try {
+        const q = query(collection(db, "planner_trips"));
+        const snapshot = await getDocs(q);
+        const trips = [];
+        snapshot.forEach(doc => { trips.push({ id: doc.id, ...doc.data() }); });
+        
+        if (trips.length > 0) {
+            dropdown.innerHTML = trips.map(t => `<option value="${t.id}">${window.sanitizeText(t.overview?.title || 'Unknown')}</option>`).join('');
+            dropdown.disabled = false; document.getElementById('load-btn').disabled = false;
+        } else { dropdown.innerHTML = '<option value="">No past memories found</option>'; }
+    } catch (err) {
+        console.error("Fetch Planner Error:", err);
+        dropdown.innerHTML = '<option value="">Could not consult records</option>';
+    }
+}
+
+window.loadPastTrip = async function(forcedId = null) {
+    const docId = forcedId || document.getElementById('saved-trips-dropdown').value;
+    if (!docId) return;
+    window.showLoading('Materializing your itinerary…');
+    try {
+        const docRef = doc(db, "planner_trips", docId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            window.tripData = { id: docSnap.id, ...docSnap.data() };
+            
+            const url = new URL(window.location);
+            url.searchParams.set('planner', window.tripData.id);
+            url.searchParams.delete('ledger');
+            window.history.pushState({}, '', url);
+
+            window.hideOverlay();
+            setTimeout(() => {
+                document.getElementById('main-header').style.display = 'block';
+                document.getElementById('planner-content').style.display = 'block';
+                window.initPlannerUI();
+            }, 1500);
+        } else { window.showToast('Failed to load trip: Record not found.', 'error'); }
+    } catch (err) { window.showToast('Magic interrupted. Check network or database rules.', 'error'); console.error(err); } 
+    finally { window.hideLoading(); }
+}
+
+window.generateTrip = async function() {
+    const prompt = document.getElementById('trip-prompt').value.trim();
+    const dates = document.getElementById('trip-dates').value.trim() || 'TBD';
+    const pax = document.getElementById('trip-pax').value.trim() || '1';
+    const model = document.getElementById('modelSelect').value;
+
+    if (!prompt) return window.showToast('Please describe your journey first!', 'warning');
+
+    window.showLoading('Consulting the grimoires to map your journey…');
+    try {
+        const sys = `You are an expert travel planner. Create a highly detailed travel itinerary. 
+        The trip dates are: ${dates}. Number of pax: ${pax}.
+        Rules:
+        - "color" must be one of: amber, teal, rose, violet, sky, emerald, pink, orange, purple.
+        - "id" inside locations must be lowercase letters with no spaces.
+        - "location" in itinerary MUST precisely match an "id" from locations.
+        - "icon" must be a valid Lucide icon name.
+        - "latlng" must be a 2-element array [latitude, longitude]. Use [] if unknown.`;
+
+        const responseText = await callVertexAI(sys, prompt, model);
+        let parsed = parseJSON(responseText);
+        
+        if (parsed) {
+            // Give it an ID and save to Firestore immediately
+            const newDocRef = doc(collection(db, "planner_trips"));
+            parsed.id = newDocRef.id;
+            await setDoc(newDocRef, parsed);
+            
+            window.tripData = parsed;
+            
+            const url = new URL(window.location);
+            url.searchParams.set('planner', window.tripData.id);
+            url.searchParams.delete('ledger');
+            window.history.pushState({}, '', url);
+
+            window.hideOverlay();
+            setTimeout(() => {
+                document.getElementById('main-header').style.display = 'block';
+                document.getElementById('planner-content').style.display = 'block';
+                window.initPlannerUI();
+            }, 1500);
+        } else { window.showToast('Magic failed parsing', 'error'); }
+    } catch (err) { 
+        window.showToast('Magic interrupted. Check network, API key, or Firebase rules.', 'error'); 
+        console.error("AI Gen Error:", err); 
+    } 
+    finally { window.hideLoading(); }
+}
+
+window.copyPlannerLink = function() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('planner', window.tripData.id);
+    url.searchParams.delete('ledger');
+    navigator.clipboard.writeText(url.href).then(() => {
+        window.showToast('Grimoire Link Copied! 🔗', 'success');
+    }).catch(() => window.showToast('Failed to copy link', 'error'));
+}
+
+window.initPlannerUI = function() {
+    document.getElementById('header-title').textContent = window.tripData.overview.title;
+    window.renderPlannerHeaderMeta();
+    window.createBlossoms();
+    window.renderPlannerFilters();
+    window.renderPlannerContent();
+}
+
+window.schedulePlannerSave = function() {
+    clearTimeout(window.saveTimeout); window.showSaveIndicator('saving');
+    window.saveTimeout = setTimeout(async () => {
+        try {
+            await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData);
+            window.showSaveIndicator('saved');
+        } catch (err) { window.showSaveIndicator('error'); console.error(err); }
+    }, 1200);
+}
+
+window.renderPlannerHeaderMeta = function() {
+    const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
+    document.getElementById('header-meta').innerHTML = `
+        <div class="meta-chip"><i data-lucide="calendar" style="width:13px;height:13px;"></i> ${window.sanitizeText(window.tripData.overview.dates)}</div>
+        <div class="meta-chip"><i data-lucide="users" style="width:13px;height:13px;"></i> ${window.sanitizeText(window.tripData.overview.pax || '')} pax</div>
+        <div class="meta-chip"><i data-lucide="wallet" style="width:13px;height:13px;"></i> Total: $${grandTotal.toLocaleString()}</div>
+    `;
+    lucide.createIcons({ nodes: [document.getElementById('header-meta')] });
+}
+
+window.renderPlannerFilters = function() {
+    const nav = document.getElementById('filter-nav');
+    let html = `<button onclick="window.setFilter('all')" class="filter-btn ${window.activeFilter === 'all' ? 'active' : ''}">
+        <i data-lucide="layout-list" style="width:12px;height:12px;"></i> Full Itinerary
+    </button>`;
+    (window.tripData.locations || []).forEach(loc => {
+        const theme = window.getTheme(loc.color);
+        html += `<button onclick="window.setFilter('${window.sanitizeText(loc.id)}')" class="filter-btn ${window.activeFilter === loc.id ? 'active' : ''}">
+            <span style="width:8px;height:8px;border-radius:50%;background:${theme.dot};display:inline-block;flex-shrink:0;"></span>
+            ${window.sanitizeText(loc.name)}
+        </button>`;
+    });
+    nav.innerHTML = html; lucide.createIcons({ nodes: [nav] });
+}
+
+window.renderPlannerContent = function() {
+    let html = '';
+    if (window.activeFilter === 'all') html += window.renderBudget(); else html += window.renderHero();
+    html += window.renderExpenseSummary(); html += window.renderTimeline();
+    document.getElementById('planner-content').innerHTML = html;
+    lucide.createIcons({ nodes: [document.getElementById('planner-content')] });
+}
+
+window.setFilter = function(filterId) {
+    window.activeFilter = filterId;
+    Object.values(window.mapInstances).forEach(m => { try { m.remove(); } catch(_){} });
+    window.mapInstances = {}; window.openMaps.clear();
+    window.renderPlannerFilters(); window.renderPlannerContent(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Modal & Delete Logic
+window.toggleChatModal = function() { document.getElementById('ai-chat-modal').classList.toggle('show'); }
+window.submitEdit = async function() {
+    const prompt = document.getElementById('edit-prompt').value.trim();
+    if(!prompt) return;
+    document.getElementById('submit-edit-btn').disabled = true; document.getElementById('chat-loading').style.display = 'block';
+    try {
+        const sys = `You are an expert travel planner. Modify this existing itinerary based on user request. Return identical JSON structure.
+        Current JSON: ${JSON.stringify(window.tripData)}`;
+        const model = document.getElementById('modelSelect').value;
+        const responseText = await callVertexAI(sys, prompt, model);
+        let parsed = parseJSON(responseText);
+        
+        if(parsed){ 
+            parsed.id = window.tripData.id; // Keep original ID
+            window.tripData = parsed; 
+            await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData);
+            document.getElementById('edit-prompt').value=''; 
+            window.toggleChatModal(); window.initPlannerUI(); window.showToast('Itinerary updated!','success');
+        }
+    } catch(err) { console.error(err); } 
+    finally { document.getElementById('submit-edit-btn').disabled = false; document.getElementById('chat-loading').style.display = 'none'; }
+}
+window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.tripData.overview.title}" will be permanently erased.`; document.getElementById('delete-modal').style.display = 'flex'; }
+window.closeDeleteModal = function() { document.getElementById('delete-modal').style.display = 'none'; }
+window.confirmDeletePlanner = async function() {
+    window.closeDeleteModal();
+    try {
+        await deleteDoc(doc(db, "planner_trips", window.tripData.id));
+        window.showToast('Journey erased.', 'success'); setTimeout(() => window.softReset(), 800);
+    } catch (e) { window.showToast('Network error', 'error'); }
+}
+
+window.getTotalActivityExpenses = function() { return window.tripData.itinerary.reduce((s, day) => s + day.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0); }
+window.getDayExpenses = function(dayNum) { const day = window.tripData.itinerary.find(d => d.day === dayNum); return day ? day.events.reduce((s, e) => s + (e.expense || 0), 0) : 0; }
+window.getLocationExpenses = function(locId) { return window.tripData.itinerary.filter(d => d.location === locId).reduce((s, day) => s + day.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0); }
+window.getBaseBudgetTotal = function() { return (window.tripData.budget || []).reduce((s, b) => s + (b.amount || 0), 0); }
+
+window.renderBudget = function() {
+    if (!window.tripData.budget || !window.tripData.budget.length) return '';
+    let html = `<div class="section-title"><i data-lucide="credit-card" style="width:18px;height:18px;color:var(--accent);"></i> Base Estimates</div><div class="budget-grid">`;
+    window.tripData.budget.forEach((item, idx) => {
+        html += `<div class="budget-card"><div class="budget-icon"><i data-lucide="${window.sanitizeText(item.icon || 'circle')}" style="width:16px;height:16px;"></i></div><div style="flex:1;min-width:0;"><div class="budget-label">${window.sanitizeText(item.item)}</div><div class="budget-amount-wrap"><span class="budget-currency">$</span><input type="number" min="0" value="${item.amount || 0}" onchange="window.updateBaseExpense(${idx}, this.value)" class="budget-amount-input"></div></div></div>`;
+    });
+    return html + '</div>';
+}
+window.updateBaseExpense = function(idx, val) { window.tripData.budget[idx].amount = Math.max(0, parseInt(val) || 0); window.schedulePlannerSave(); window.renderPlannerHeaderMeta(); document.getElementById('expense-summary-section').outerHTML = window.renderExpenseSummary(); lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); }
+
+window.renderExpenseSummary = function() {
+    const activityTotal = window.activeFilter === 'all' ? window.getTotalActivityExpenses() : window.getLocationExpenses(window.activeFilter);
+    const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
+    const pct = Math.min((window.getTotalActivityExpenses() / (grandTotal || 1)) * 100, 100);
+    const filteredLocs = window.activeFilter === 'all' ? (window.tripData.locations || []) : (window.tripData.locations || []).filter(l => l.id === window.activeFilter);
+    let locRows = '';
+    filteredLocs.forEach(loc => { const theme = window.getTheme(loc.color); const amt = window.getLocationExpenses(loc.id); locRows += `<div class="loc-row"><span class="loc-name" style="color:var(--text-main);"><span style="width:8px;height:8px;border-radius:50%;background:${theme.dot};display:inline-block;"></span>${window.sanitizeText(loc.name)}</span><span class="loc-amount">$${amt.toLocaleString()}</span></div>`; });
+    return `<div class="expense-summary" id="expense-summary-section"><div class="expense-header"><div style="display:flex;align-items:center;gap:10px;"><div class="section-title" style="margin:0; border:none; padding:0;"><i data-lucide="wallet" style="width:18px;height:18px;color:var(--accent);"></i> Activity Spend</div><button class="zeroise-btn" onclick="window.zeroisePlannerExpenses()">Reset</button></div><div style="text-align:right;"><div class="expense-total">$${activityTotal.toLocaleString()}</div></div></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct.toFixed(1)}%;"></div></div><div class="loc-breakdown">${locRows}</div></div>`;
+}
+window.zeroisePlannerExpenses = function() { window.tripData.itinerary.forEach(day => { day.events.forEach(e => { e.expense = 0; }); }); window.schedulePlannerSave(); window.renderPlannerHeaderMeta(); window.renderPlannerContent(); window.showToast('Reset to $0.', 'info'); }
+
+window.renderHero = function() {
+    const loc = (window.tripData.locations || []).find(l => l.id === window.activeFilter); if (!loc || !loc.image) return ''; const safeUrl = window.sanitizeURL(loc.image); if (!safeUrl) return '';
+    return `<div class="loc-hero"><img src="${safeUrl}"><div class="loc-hero-overlay"><div class="loc-hero-name">${window.sanitizeText(loc.name)}</div></div></div>`;
+}
+
+window.renderTimeline = function() {
+    const days = (window.tripData.itinerary || []).filter(d => window.activeFilter === 'all' || d.location === window.activeFilter);
+    if (!days.length) return `<div class="empty-state-main">No events found.</div>`;
+    let html = '';
+    days.forEach(day => {
+        const loc = (window.tripData.locations || []).find(l => l.id === day.location); const theme = window.getTheme(loc ? loc.color : 'amber'); const hasMap = day.events && day.events.some(e => e.latlng);
+        html += `<div class="day-card"><div class="day-header"><div><div class="day-label" style="color:var(--text-muted);">Day ${day.day} &bull; ${window.sanitizeText(day.date)}</div><div class="day-title">${window.sanitizeText(day.title)}</div></div><div class="day-chips"><div class="day-expense-chip" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</div>${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="map-toggle"><i data-lucide="map" style="width:11px;height:11px;"></i> Map</button>` : ''}</div></div>${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}<div class="events-wrap"><div class="timeline-rail">`;
+        (day.events || []).forEach((event, idx) => {
+            const safeLink = window.sanitizeURL(event.link); const rawDesc = event.desc || ''; const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>` : rawDesc;
+            html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"></div></div></div>`;
+        });
+        html += `</div></div></div>`;
+    });
+    return html;
+}
+window.updatePlannerExpense = function(dayNum, eventIdx, value) {
+    const day = window.tripData.itinerary.find(d => d.day === dayNum); if (!day || !day.events[eventIdx]) return;
+    day.events[eventIdx].expense = Math.max(0, parseInt(value) || 0);
+    document.getElementById(`day-expense-${dayNum}`).textContent = `$${window.getDayExpenses(dayNum).toLocaleString()}`;
+    document.getElementById('expense-summary-section').outerHTML = window.renderExpenseSummary();
+    window.renderPlannerHeaderMeta(); lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); window.schedulePlannerSave();
+}
+
+window.toggleMap = function(dayNum) {
+    const container = document.getElementById(`map-container-${dayNum}`); const btn = document.getElementById(`map-toggle-${dayNum}`);
+    if (window.openMaps.has(dayNum)) { container.classList.remove('open'); window.openMaps.delete(dayNum); if(btn) btn.classList.remove('open'); } 
+    else { container.classList.add('open'); window.openMaps.add(dayNum); if(btn) btn.classList.add('open'); setTimeout(() => window.initMap(dayNum), 80); }
+}
+window.initMap = function(dayNum) {
+    const mapEl = document.getElementById(`map-${dayNum}`); if (!mapEl || window.mapInstances[dayNum]) return;
+    const day = window.tripData.itinerary.find(d => d.day === dayNum); const events = (day.events || []).filter(e => e.latlng); if (!events.length) return;
+    const theme = window.getTheme((window.tripData.locations || []).find(l => l.id === day.location)?.color || 'amber');
+    const map = L.map(mapEl, { scrollWheelZoom: false }); window.mapInstances[dayNum] = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const latlngs = [];
+    events.forEach((e, i) => {
+        const icon = L.divIcon({ className: '', html: `<div style="background:${theme.mapMarker};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
+        const cleanDesc = (e.desc || '').replace(/<[^>]*>/g, '');
+        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${window.sanitizeText(cleanDesc)}</strong>`);
+        latlngs.push(e.latlng);
+    });
+    if (latlngs.length > 1) L.polyline(latlngs, { color: theme.mapMarker, weight: 2.5, dashArray: '6 6', opacity: 0.8 }).addTo(map);
+    if (latlngs.length) map.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30] });
+    setTimeout(() => { try { map.invalidateSize(); } catch(_) {} }, 450);
+}
+
+window.initTitleParticles = function() {
+    const c = document.getElementById('title-canvas'); if (!c) return; const ctx = c.getContext('2d');
+    function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+    const particles = Array.from({length: 80}, () => ({ x: Math.random() * c.width, y: Math.random() * c.height, vy: -(Math.random() * 0.4 + 0.1), vx: (Math.random() - 0.5) * 0.2, size: Math.random() * 2 + 0.5, alpha: Math.random() * 0.4 + 0.1, color: ['#7ab8d0','#a0c8e0','#c0e0f0','#6090a8','#8ab0c8'][Math.floor(Math.random()*5)] }));
+    function tick() {
+        if (!particlesActive) return; ctx.clearRect(0,0,c.width,c.height);
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.y < -5) { p.y = c.height + 5; p.x = Math.random()*c.width; }
+            ctx.globalAlpha = p.alpha * (0.7 + 0.3*Math.sin(Date.now()*0.001 + p.x)); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
+        requestAnimationFrame(tick);
+    }
+    particlesActive = true; tick();
+}
+window.createBlossoms = function() {
+    const container = document.getElementById('blossom-container'); container.innerHTML = '';
+    for (let i = 0; i < 25; i++) {
+        const p = document.createElement('div'); p.className = 'petal'; const s = Math.random() * 7 + 5;
+        p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random() * 120 - 10}vw; animation-duration:${Math.random() * 9 + 7}s; animation-delay:-${Math.random() * 12}s; opacity:${Math.random() * 0.4 + 0.3};`;
+        container.appendChild(p);
+    }
+}
+
+
+// ============================================================
+//  APP 2: LEDGER (WHO PAY WHO) LOGIC (FIRESTORE)
+// ============================================================
+window.ledgerTrips = [];
+window.activeLedgerId = null;
+window.editingExpenseId = null;
+window.currentSettlements = [];
+window.chartInstance = null;
+
+window.fetchLedgerTrips = async function() {
+    const listEl = document.getElementById('ledgerList');
+    const msgEl = document.getElementById('ledgerLoadingMsg');
+    msgEl.style.display = 'block'; listEl.innerHTML = '';
+    try {
+        const q = query(collection(db, "debt_ledgers"));
+        const snapshot = await getDocs(q);
+        window.ledgerTrips = [];
+        snapshot.forEach(doc => { window.ledgerTrips.push({ id: doc.id, ...doc.data() }); });
+        
+        msgEl.style.display = 'none';
+        if (window.ledgerTrips.length === 0) { listEl.innerHTML = '<div class="empty-state-main" style="border:none;background:transparent;">No ledgers yet!</div>'; return; }
+        
+        // Reverse array so oldest appear first per user request
+        const sortedLedgers = window.ledgerTrips.reverse();
+
+        sortedLedgers.forEach(trip => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-secondary';
+            btn.style.width = '100%';
+            btn.style.justifyContent = 'flex-start';
+            btn.innerHTML = `<i data-lucide="book" style="width:16px;height:16px;"></i> ${window.sanitizeText(trip.name)} <span style="margin-left:auto;font-size:0.75rem;opacity:0.6;">${(trip.users||[]).length} pax</span>`;
+            btn.onclick = () => window.openLedger(trip.id);
+            listEl.appendChild(btn);
+        });
+        lucide.createIcons({ nodes: [listEl] });
+
+    } catch(err) {
+        msgEl.innerHTML = '<span style="color:#ef4444;">Connection failed.</span>';
+        console.error("Fetch Ledger Error:", err);
+    }
+}
+
+window.createLedger = async function(e) {
+    e.preventDefault();
+    const rawName = document.getElementById('ledgerName').value.trim();
+    const currency = document.getElementById('ledgerCurrency').value;
+    const newDocRef = doc(collection(db, "debt_ledgers"));
+    const newTrip = { id: newDocRef.id, name: rawName.charAt(0).toUpperCase() + rawName.slice(1), currency: currency, users: [], expenses: [] };
+    
+    window.ledgerTrips.push(newTrip); 
+    document.getElementById('ledgerName').value = '';
+    window.openLedger(newTrip.id);
+    
+    await setDoc(newDocRef, newTrip);
+}
+
+window.switchLedgerTab = function(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tabbtn-${tabId}`).classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+window.openLedger = function(id) {
+    window.activeLedgerId = id;
+    
+    const url = new URL(window.location);
+    url.searchParams.set('ledger', id);
+    url.searchParams.delete('planner');
+    window.history.pushState({}, '', url);
+
+    window.hideOverlay();
+    setTimeout(() => {
+        document.getElementById('ledger-header').style.display = 'block';
+        document.getElementById('ledger-view').style.display = 'block';
+        window.switchLedgerTab('dash'); 
+        window.cancelEdit(); window.renderLedgerDetails();
+    }, 1500);
+}
+
+window.getActiveLedger = function() { return window.ledgerTrips.find(t => t.id === window.activeLedgerId); }
+
+window.saveLedgerData = async function(tripToSave) {
+    if (!tripToSave) return;
+    window.showSaveIndicator('saving');
+    try {
+        await setDoc(doc(db, "debt_ledgers", tripToSave.id), tripToSave);
+        window.showSaveIndicator('saved');
+    } catch (e) { window.showSaveIndicator('error'); console.error(e); }
+}
+
+window.deleteLedger = async function() {
+    if (!confirm("Are you sure you want to delete this ledger forever?")) return;
+    const tripIdToDelete = window.activeLedgerId;
+    window.ledgerTrips = window.ledgerTrips.filter(t => t.id !== window.activeLedgerId);
+    window.softReset();
+    try {
+        await deleteDoc(doc(db, "debt_ledgers", tripIdToDelete));
+    } catch(e) { console.error(e); }
+}
+
+window.copyLedgerLink = function() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('ledger', window.activeLedgerId);
+    url.searchParams.delete('planner');
+    navigator.clipboard.writeText(url.href).then(() => {
+        window.showToast('Ledger Link Copied! 🔗', 'success');
+    });
+}
+
+// User Logic
+window.addUser = function(e) {
+    e.preventDefault();
+    const rawName = document.getElementById('userName').value.trim();
+    const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+    const trip = window.getActiveLedger();
+    if (name && !trip.users.includes(name)) { trip.users.push(name); window.renderLedgerDetails(); document.getElementById('userName').value = ''; window.saveLedgerData(trip); }
+}
+
+window.deleteUser = function(userName) {
+    const trip = window.getActiveLedger();
+    if (trip.expenses.some(exp => exp.payer === userName || (exp.involvedUsers && exp.involvedUsers.includes(userName)))) return window.showToast(`${userName} is tied to some expenses.`, 'warning');
+    if (!confirm(`Remove ${userName}?`)) return;
+    trip.users = trip.users.filter(u => u !== userName); window.renderLedgerDetails(); window.saveLedgerData(trip);
+}
+
+// Expense Logic
+window.saveExpense = function(e) {
+    e.preventDefault();
+    const trip = window.getActiveLedger();
+    if (trip.users.length === 0) return window.showToast("Please add some people first!", 'warning');
+
+    const checkboxes = document.querySelectorAll('input[name="involved"]:checked');
+    const involvedUsers = Array.from(checkboxes).map(cb => cb.value);
+    if(involvedUsers.length === 0) return window.showToast("Please select who is splitting this expense.", 'warning');
+
+    const category = document.getElementById('expenseCategory').value;
+    const rawDesc = document.getElementById('expenseDesc').value.trim();
+    
+    const expenseData = {
+        id: window.editingExpenseId || 'EXP_' + Date.now(),
+        desc: `[${category}] ${rawDesc}`,
+        amount: parseFloat(document.getElementById('expenseAmount').value),
+        payer: document.getElementById('expensePayer').value,
+        involvedUsers: involvedUsers
+    };
+
+    if (window.editingExpenseId) { const index = trip.expenses.findIndex(e => e.id === window.editingExpenseId); trip.expenses[index] = expenseData; } 
+    else { trip.expenses.push(expenseData); }
+
+    window.cancelEdit(); window.renderLedgerDetails(); e.target.reset(); window.saveLedgerData(trip);
+    window.showToast('Expense Logged', 'success');
+}
+
+window.deleteExpense = function(expenseId) {
+    if(!confirm("Delete this expense?")) return;
+    const trip = window.getActiveLedger(); trip.expenses = trip.expenses.filter(e => e.id !== expenseId); window.renderLedgerDetails(); window.saveLedgerData(trip);
+}
+
+window.editExpense = function(expenseId) {
+    const trip = window.getActiveLedger(); const exp = trip.expenses.find(e => e.id === expenseId); if(!exp) return;
+    window.editingExpenseId = expenseId;
+    const match = exp.desc.match(/^\[(.*?)\] (.*)$/);
+    if (match) { document.getElementById('expenseCategory').value = match[1]; document.getElementById('expenseDesc').value = match[2]; } 
+    else { document.getElementById('expenseCategory').value = "Other"; document.getElementById('expenseDesc').value = exp.desc; }
+    document.getElementById('expenseAmount').value = exp.amount; document.getElementById('expensePayer').value = exp.payer;
+    document.querySelectorAll('input[name="involved"]').forEach(cb => { cb.checked = exp.involvedUsers.includes(cb.value); });
+    document.getElementById('expenseFormTitle').textContent = "Edit Expense"; 
+    document.getElementById('submitExpenseBtn').textContent = "Update Expense";
+    document.getElementById('cancelEditBtn').style.display = "block";
+    window.scrollTo({ top: document.getElementById('expenseFormTitle').offsetTop - 100, behavior: 'smooth' });
+}
+
+window.cancelEdit = function() {
+    window.editingExpenseId = null; document.getElementById('addExpenseForm').reset();
+    document.getElementById('expenseFormTitle').textContent = "Add an Expense"; 
+    document.getElementById('submitExpenseBtn').textContent = "Save Expense";
+    document.getElementById('cancelEditBtn').style.display = "none";
+    document.querySelectorAll('input[name="involved"]').forEach(cb => cb.checked = true);
+}
+
+window.executeSettlement = function(fromUser, toUser, amount) {
+    const curr = window.getActiveLedger().currency || '$';
+    if(!confirm(`Mark as paid? This records that ${fromUser} paid ${curr}${amount.toFixed(2)} to ${toUser}.`)) return;
+    const trip = window.getActiveLedger();
+    trip.expenses.push({ id: 'SETTLE_' + Date.now(), desc: `[Settlement] Paid to ${toUser}`, amount: parseFloat(amount), payer: fromUser, involvedUsers: [toUser] });
+    window.renderLedgerDetails(); window.saveLedgerData(trip);
+}
+
+window.copySettlements = function() {
+    const trip = window.getActiveLedger(); const curr = trip.currency || '$'; if(!trip || window.currentSettlements.length === 0) return;
+    let text = `${trip.name} Settlements\n------------------------\n`;
+    window.currentSettlements.forEach(s => { text += `💸 ${s.from} needs to pay ${curr}${s.amount.toFixed(2)} to ${s.to}\n`; });
+    navigator.clipboard.writeText(text).then(() => { window.showToast('Copied to clipboard!', 'success'); });
+}
+
+window.renderDebtChart = function(trip) {
+    const ctx = document.getElementById('debtChart').getContext('2d'); const curr = trip.currency || '$'; 
+    if (window.chartInstance) window.chartInstance.destroy();
+    if (trip.expenses.length === 0) {
+        window.chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['Start'], datasets: [{ data: [0], borderColor: 'rgba(100,160,200,0.5)' }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { y: { display: false }, x: { display: false } } } });
+        document.getElementById('chartWrapper').classList.remove('vibrating-chart'); return;
+    }
+    let chartLabels = ['Start']; let chartData = [0]; let runningBalances = {}; trip.users.forEach(u => runningBalances[u] = 0);
+    trip.expenses.forEach(exp => {
+        const involved = exp.involvedUsers || trip.users; const amt = parseFloat(exp.amount) || 0; 
+        if (involved.length > 0) {
+            const split = amt / involved.length; runningBalances[exp.payer] = (runningBalances[exp.payer] || 0) + amt;
+            involved.forEach(u => { runningBalances[u] = (runningBalances[u] || 0) - split; });
+        }
+        let currentDebt = 0; for (let user in runningBalances) if (runningBalances[user] > 0.01) currentDebt += runningBalances[user];
+        chartData.push(currentDebt);
+        const match = exp.desc.match(/^\[.*?\] (.*)$/); let labelName = match ? match[1] : exp.desc;
+        if(labelName && labelName.length > 12) labelName = labelName.substring(0, 12) + '...'; chartLabels.push(labelName || 'Expense');
+    });
+
+    const latestDebt = chartData[chartData.length - 1]; const cw = document.getElementById('chartWrapper');
+    if (latestDebt > 5) { cw.classList.add('vibrating-chart'); cw.style.setProperty('--shake-intensity', `${Math.min(latestDebt/40, 4).toFixed(1)}px`); cw.style.animationDuration = `${Math.max(0.08, 0.3 - (latestDebt/1000))}s`; } 
+    else { cw.classList.remove('vibrating-chart'); }
+
+    const isTrendingDown = chartData.length > 2 && chartData[chartData.length - 1] < chartData[chartData.length - 2];
+    const lineColor = isTrendingDown ? '#10b981' : '#7ab8d0'; const bgColor = isTrendingDown ? 'rgba(16, 185, 129, 0.1)' : 'rgba(100, 180, 220, 0.1)';
+
+    window.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: chartLabels, datasets: [{ data: chartData, borderColor: lineColor, backgroundColor: bgColor, borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: lineColor }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => curr + c.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6a90a8', callback: v => curr + v } }, x: { grid: { display: false }, ticks: { color: '#6a90a8' } } } }
+    });
+}
+
+window.renderLedgerDetails = function() {
+    const trip = window.getActiveLedger(); if (!trip) return;
+    const curr = trip.currency || '$';
+
+    document.getElementById('ledger-header-title').textContent = trip.name;
+    const userList = document.getElementById('userList'); const expPayer = document.getElementById('expensePayer'); const invCont = document.getElementById('involvedUsersContainer'); const expLog = document.getElementById('expenseLogList');
+    userList.innerHTML = ''; expPayer.innerHTML = '<option value="" disabled selected>-- Select Payer --</option>'; invCont.innerHTML = ''; expLog.innerHTML = '';
+    
+    if(trip.users.length === 0) userList.innerHTML = '<div class="empty-state-main">The party is empty.</div>';
+
+    trip.users.forEach(user => {
+        userList.innerHTML += `<li class="ledger-li"><span style="font-weight: 500; font-family:'DM Sans', sans-serif;">${window.sanitizeText(user)}</span><button class="icon-btn danger" onclick="window.deleteUser('${window.sanitizeText(user)}')"><i data-lucide="x" style="width:14px;height:14px;"></i></button></li>`;
+        expPayer.innerHTML += `<option value="${window.sanitizeText(user)}">${window.sanitizeText(user)}</option>`;
+        invCont.innerHTML += `<label><input type="checkbox" name="involved" value="${window.sanitizeText(user)}" checked> ${window.sanitizeText(user)}</label>`;
+    });
+
+    document.getElementById('expenseAmount').placeholder = `Amount (${curr})`;
+
+    let categoryTotals = {}; let individualShare = {}; let totalCost = 0; let balances = {};
+    trip.users.forEach(u => { individualShare[u] = 0; balances[u] = 0; });
+
+    if (trip.expenses.length === 0) expLog.innerHTML = '<div class="empty-state-main">No expenditures recorded.</div>';
+
+    trip.expenses.forEach(exp => {
+        const involved = exp.involvedUsers || trip.users; const involvedCount = involved.length;
+        let displayDesc = window.sanitizeText(exp.desc); let categoryName = "Other";
+        const match = exp.desc.match(/^\[(.*?)\] (.*)$/);
+        if (match) { 
+            categoryName = match[1]; 
+            const isSettle = categoryName === 'Settlement';
+            displayDesc = `<span class="ledger-summary-title" style="color:${isSettle ? 'var(--success)' : 'var(--text-muted)'}; margin-bottom:2px; display:block;">${window.sanitizeText(match[1])}</span><span style="font-size: 1rem; color:var(--text-main); font-weight:${isSettle ? '700' : '400'}; font-family:'DM Sans', sans-serif;">${window.sanitizeText(match[2])}</span>`; 
+        }
+
+        expLog.innerHTML += `<li class="ledger-li" style="align-items: flex-start; flex-direction: column;">
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 12px; font-family:'DM Sans', sans-serif;">
+                <div>${displayDesc}<br><small style="color:var(--text-muted);">Paid by ${window.sanitizeText(exp.payer)}</small></div>
+                <div style="text-align: right;"><span style="color:var(--text-title); font-weight: 700; font-size: 1.1rem; font-variant-numeric: tabular-nums;">${curr}${exp.amount.toFixed(2)}</span></div>
+            </div>
+            <div style="display:flex; gap:8px; width:100%;"><button class="icon-btn" onclick="window.editExpense('${exp.id}')">Edit</button><button class="icon-btn danger" onclick="window.deleteExpense('${exp.id}')">Delete</button></div>
+        </li>`;
+
+        if (categoryName !== 'Settlement') { totalCost += parseFloat(exp.amount) || 0; categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + (parseFloat(exp.amount) || 0); }
+        if(involvedCount > 0) {
+            const split = (parseFloat(exp.amount) || 0) / involvedCount; balances[exp.payer] += (parseFloat(exp.amount) || 0);
+            involved.forEach(u => { balances[u] -= split; if (categoryName !== 'Settlement') individualShare[u] += split; });
+        }
+    });
+    lucide.createIcons({ nodes: [expLog, userList] });
+    window.renderDebtChart(trip);
+
+    document.getElementById('totalSpentDisplay').textContent = `${curr}${totalCost.toFixed(2)}`;
+    const catSum = document.getElementById('categorySummary'); const perSum = document.getElementById('personSummary'); catSum.innerHTML = ''; perSum.innerHTML = '';
+    
+    if (totalCost === 0) { catSum.innerHTML = '<p class="empty-state-main" style="padding:10px;">Nothing spent yet.</p>'; perSum.innerHTML = '<p class="empty-state-main" style="padding:10px;">Nothing spent yet.</p>'; } 
+    else {
+        Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+            catSum.innerHTML += `<div class="loc-row" style="margin-bottom:6px;"><span class="loc-name" style="font-family:'DM Sans', sans-serif;">${window.sanitizeText(cat)}</span> <strong class="loc-amount" style="font-family:'DM Sans', sans-serif;">${curr}${amt.toFixed(2)}</strong></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width: ${(amt / totalCost) * 100}%"></div></div>`;
+        });
+        const sortedPersons = Object.entries(individualShare).sort((a, b) => b[1] - a[1]); const maxShare = sortedPersons.length > 0 ? sortedPersons[0][1] : 1; 
+        sortedPersons.forEach(([person, amt]) => {
+            perSum.innerHTML += `<div class="loc-row" style="margin-bottom:6px;"><span class="loc-name" style="font-family:'DM Sans', sans-serif;">${window.sanitizeText(person)}</span> <strong class="loc-amount" style="font-family:'DM Sans', sans-serif;">${curr}${amt.toFixed(2)}</strong></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width: ${(amt / maxShare) * 100}%; background: var(--success); box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div></div>`;
+        });
+    }
+
+    let debtors = []; let creditors = [];
+    for (const [user, balance] of Object.entries(balances)) { if (balance < -0.01) debtors.push({ user, amount: Math.abs(balance) }); else if (balance > 0.01) creditors.push({ user, amount: balance }); }
+    debtors.sort((a, b) => b.amount - a.amount); creditors.sort((a, b) => b.amount - a.amount);
+
+    window.currentSettlements = []; let i = 0; let j = 0;
+    while (i < debtors.length && j < creditors.length) {
+        let debtor = debtors[i]; let creditor = creditors[j]; let minAmount = Math.min(debtor.amount, creditor.amount);
+        window.currentSettlements.push({ from: debtor.user, to: creditor.user, amount: minAmount });
+        debtor.amount -= minAmount; creditor.amount -= minAmount;
+        if (Math.abs(debtor.amount) < 0.01) i++; if (Math.abs(creditor.amount) < 0.01) j++;
+    }
+
+    const setList = document.getElementById('settlementList'); setList.innerHTML = '';
+    document.getElementById('copySettlementsBtn').style.display = 'none';
+    if (window.currentSettlements.length === 0) {
+        if (trip.expenses.length > 0) setList.innerHTML = '<div class="empty-state-main" style="color:var(--success); border-color:var(--success);">The scales are balanced.</div>';
+        else setList.innerHTML = '<div class="empty-state-main">Add expenses to reveal the balance.</div>';
+    } else {
+        window.currentSettlements.forEach(s => {
+            setList.innerHTML += `<li class="ledger-li" style="flex-direction: column; align-items: flex-start;">
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-family:'DM Sans', sans-serif;">
+                    <span><strong style="color:var(--danger); font-weight:700;">${window.sanitizeText(s.from)}</strong> <span style="color:var(--text-muted); font-size:0.9rem; margin:0 4px;">→</span> <strong style="color:var(--success); font-weight:700;">${window.sanitizeText(s.to)}</strong></span>
+                    <span class="settlement-amount">${curr}${s.amount.toFixed(2)}</span>
+                </div>
+                <button class="settle-action-btn" style="width:100%;" onclick="window.executeSettlement('${window.sanitizeText(s.from)}', '${window.sanitizeText(s.to)}', ${s.amount})">Mark as Paid</button>
+            </li>`;
+        });
+        document.getElementById('copySettlementsBtn').style.display = 'flex'; 
+    }
+}
+</script>
+</body>
+</html>
