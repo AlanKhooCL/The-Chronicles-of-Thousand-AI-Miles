@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 
     <style>
         :root {
@@ -671,7 +672,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getVertexAI, getGenerativeModel } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-vertexai.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -686,7 +687,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const vertexAI = getVertexAI(app, { location: "global" });
+const functions = getFunctions(app);
 
 // ============================================================
 //  SHARED STATE & UTILS
@@ -698,7 +699,7 @@ window.showToast = function(message, type = 'info', duration = 3500) {
     const icons = { success: 'check-circle', error: 'x-circle', info: 'info', warning: 'alert-triangle' };
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:14px;height:14px;flex-shrink:0;"></i> ${window.sanitizeText(message)}`;
+    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:14px;height:14px;flex-shrink:0;"></i> ${DOMPurify.sanitize(message)}`;
     container.appendChild(toast);
     lucide.createIcons({ nodes: [toast] });
     setTimeout(() => {
@@ -718,8 +719,9 @@ window.showSaveIndicator = function(state = 'saving') {
 
 window.sanitizeText = function(str) {
     if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return DOMPurify.sanitize(String(str), { ALLOWED_TAGS: [] }); // Strip all tags for simple text
 }
+
 window.sanitizeURL = function(url) {
     if (!url) return null;
     try { const u = new URL(url); if (u.protocol === 'http:' || u.protocol === 'https:') return url; } catch (_) {}
@@ -746,48 +748,6 @@ window.switchPortalTab = function(portalType, section) {
     document.getElementById(`${sfix}-load`).classList.remove('active');
     document.getElementById(`${sfix}-new`).classList.remove('active');
     document.getElementById(`${sfix}-${section}`).classList.add('active');
-}
-
-// ============================================================
-//  VERTEX AI CONFIGURATION
-// ============================================================
-const tripSchema = {
-  type: "OBJECT",
-  properties: {
-    overview: { type: "OBJECT", properties: { title: {type:"STRING"}, dates: {type:"STRING"}, pax: {type:"STRING"}, totalBudget: {type:"STRING"} } },
-    budget: { type: "ARRAY", items: { type: "OBJECT", properties: { item: {type:"STRING"}, cost: {type:"STRING"}, amount: {type:"NUMBER"}, icon: {type:"STRING"} } } },
-    locations: { type: "ARRAY", items: { type: "OBJECT", properties: { id: {type:"STRING"}, name: {type:"STRING"}, color: {type:"STRING"}, image: {type:"STRING"} } } },
-    itinerary: {
-      type: "ARRAY", items: {
-        type: "OBJECT", properties: {
-          day: {type:"NUMBER"}, date: {type:"STRING"}, location: {type:"STRING"}, title: {type:"STRING"},
-          events: {
-            type: "ARRAY", items: {
-              type: "OBJECT", properties: {
-                time: {type:"STRING"}, desc: {type:"STRING"}, icon: {type:"STRING"}, link: {type:"STRING"},
-                latlng: {type:"ARRAY", items: {type:"NUMBER"}}, expense: {type:"NUMBER"}
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-};
-
-async function callVertexAI(system, userPrompt, modelName) {
-  const config = {
-    systemInstruction: system,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: tripSchema
-    }
-  };
-  const model = getGenerativeModel(vertexAI, { model: modelName || 'gemini-3-flash-preview', ...config });
-  const result = await model.generateContent(userPrompt);
-  const text = result?.response?.text ? result.response.text() : "";
-  if (!text) throw new Error("No output generated.");
-  return text;
 }
 
 function parseJSON(text) {
@@ -900,7 +860,7 @@ onAuthStateChanged(auth, user => {
 
 
 // ============================================================
-//  APP 1: PLANNER LOGIC (FIRESTORE + VERTEX)
+//  APP 1: PLANNER LOGIC (FIRESTORE + CLOUD FUNCTIONS)
 // ============================================================
 window.tripData = null;
 window.activeFilter = 'all';
@@ -976,16 +936,15 @@ window.generateTrip = async function() {
 
     window.showLoading('Consulting the grimoires to map your journey…');
     try {
-        const sys = `You are an expert travel planner. Create a highly detailed travel itinerary. 
-        The trip dates are: ${dates}. Number of pax: ${pax}.
-        Rules:
-        - "color" must be one of: amber, teal, rose, violet, sky, emerald, pink, orange, purple.
-        - "id" inside locations must be lowercase letters with no spaces.
-        - "location" in itinerary MUST precisely match an "id" from locations.
-        - "icon" must be a valid Lucide icon name.
-        - "latlng" must be a 2-element array [latitude, longitude]. Use [] if unknown.`;
+        const generateTripFunction = httpsCallable(functions, 'generateTrip');
+        const response = await generateTripFunction({
+            prompt: prompt,
+            dates: dates,
+            pax: pax,
+            modelId: model
+        });
 
-        const responseText = await callVertexAI(sys, prompt, model);
+        const responseText = response.data.result;
         let parsed = parseJSON(responseText);
         
         if (parsed) {
@@ -1025,7 +984,7 @@ window.copyPlannerLink = function() {
 }
 
 window.initPlannerUI = function() {
-    document.getElementById('header-title').textContent = window.tripData.overview.title;
+    document.getElementById('header-title').textContent = window.sanitizeText(window.tripData.overview.title);
     window.renderPlannerHeaderMeta();
     window.createBlossoms();
     window.renderPlannerFilters();
@@ -1071,7 +1030,7 @@ window.renderPlannerContent = function() {
     let html = '';
     if (window.activeFilter === 'all') html += window.renderBudget(); else html += window.renderHero();
     html += window.renderExpenseSummary(); html += window.renderTimeline();
-    document.getElementById('planner-content').innerHTML = html;
+    document.getElementById('planner-content').innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'onchange', 'onclick'] });
     lucide.createIcons({ nodes: [document.getElementById('planner-content')] });
 }
 
@@ -1088,11 +1047,17 @@ window.submitEdit = async function() {
     const prompt = document.getElementById('edit-prompt').value.trim();
     if(!prompt) return;
     document.getElementById('submit-edit-btn').disabled = true; document.getElementById('chat-loading').style.display = 'block';
+    
     try {
-        const sys = `You are an expert travel planner. Modify this existing itinerary based on user request. Return identical JSON structure.
-        Current JSON: ${JSON.stringify(window.tripData)}`;
         const model = document.getElementById('modelSelect').value;
-        const responseText = await callVertexAI(sys, prompt, model);
+        const editTripFunction = httpsCallable(functions, 'editTrip');
+        const response = await editTripFunction({
+            prompt: prompt,
+            currentTripData: window.tripData,
+            modelId: model
+        });
+
+        const responseText = response.data.result;
         let parsed = parseJSON(responseText);
         
         if(parsed){ 
@@ -1102,10 +1067,10 @@ window.submitEdit = async function() {
             document.getElementById('edit-prompt').value=''; 
             window.toggleChatModal(); window.initPlannerUI(); window.showToast('Itinerary updated!','success');
         }
-    } catch(err) { console.error(err); } 
+    } catch(err) { console.error(err); window.showToast('Failed to modify trip.', 'error'); } 
     finally { document.getElementById('submit-edit-btn').disabled = false; document.getElementById('chat-loading').style.display = 'none'; }
 }
-window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.tripData.overview.title}" will be permanently erased.`; document.getElementById('delete-modal').style.display = 'flex'; }
+window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.sanitizeText(window.tripData.overview.title)}" will be permanently erased.`; document.getElementById('delete-modal').style.display = 'flex'; }
 window.closeDeleteModal = function() { document.getElementById('delete-modal').style.display = 'none'; }
 window.confirmDeletePlanner = async function() {
     window.closeDeleteModal();
@@ -1128,7 +1093,7 @@ window.renderBudget = function() {
     });
     return html + '</div>';
 }
-window.updateBaseExpense = function(idx, val) { window.tripData.budget[idx].amount = Math.max(0, parseInt(val) || 0); window.schedulePlannerSave(); window.renderPlannerHeaderMeta(); document.getElementById('expense-summary-section').outerHTML = window.renderExpenseSummary(); lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); }
+window.updateBaseExpense = function(idx, val) { window.tripData.budget[idx].amount = Math.max(0, parseInt(val) || 0); window.schedulePlannerSave(); window.renderPlannerHeaderMeta(); document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); }
 
 window.renderExpenseSummary = function() {
     const activityTotal = window.activeFilter === 'all' ? window.getTotalActivityExpenses() : window.getLocationExpenses(window.activeFilter);
@@ -1151,22 +1116,15 @@ window.renderTimeline = function() {
     if (!days.length) return `<div class="empty-state-main">No events found.</div>`;
     let html = '';
     days.forEach(day => {
-        const loc = (window.tripData.locations || []).find(l => l.id === day.location); const theme = window.getTheme(loc ? loc.color : 'amber'); const hasMap = day.events && day.events.some(e => e.latlng);
+        const loc = (window.tripData.locations || []).find(l => l.id === day.location); const theme = window.getTheme(loc ? loc.color : 'amber'); const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
         html += `<div class="day-card"><div class="day-header"><div><div class="day-label" style="color:var(--text-muted);">Day ${day.day} &bull; ${window.sanitizeText(day.date)}</div><div class="day-title">${window.sanitizeText(day.title)}</div></div><div class="day-chips"><div class="day-expense-chip" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</div>${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="map-toggle"><i data-lucide="map" style="width:11px;height:11px;"></i> Map</button>` : ''}</div></div>${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}<div class="events-wrap"><div class="timeline-rail">`;
         (day.events || []).forEach((event, idx) => {
-            const safeLink = window.sanitizeURL(event.link); const rawDesc = event.desc || ''; const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>` : rawDesc;
+            const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>` : rawDesc;
             html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"></div></div></div>`;
         });
         html += `</div></div></div>`;
     });
     return html;
-}
-window.updatePlannerExpense = function(dayNum, eventIdx, value) {
-    const day = window.tripData.itinerary.find(d => d.day === dayNum); if (!day || !day.events[eventIdx]) return;
-    day.events[eventIdx].expense = Math.max(0, parseInt(value) || 0);
-    document.getElementById(`day-expense-${dayNum}`).textContent = `$${window.getDayExpenses(dayNum).toLocaleString()}`;
-    document.getElementById('expense-summary-section').outerHTML = window.renderExpenseSummary();
-    window.renderPlannerHeaderMeta(); lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); window.schedulePlannerSave();
 }
 
 window.toggleMap = function(dayNum) {
@@ -1176,15 +1134,15 @@ window.toggleMap = function(dayNum) {
 }
 window.initMap = function(dayNum) {
     const mapEl = document.getElementById(`map-${dayNum}`); if (!mapEl || window.mapInstances[dayNum]) return;
-    const day = window.tripData.itinerary.find(d => d.day === dayNum); const events = (day.events || []).filter(e => e.latlng); if (!events.length) return;
+    const day = window.tripData.itinerary.find(d => d.day === dayNum); const events = (day.events || []).filter(e => e.latlng && e.latlng.length === 2); if (!events.length) return;
     const theme = window.getTheme((window.tripData.locations || []).find(l => l.id === day.location)?.color || 'amber');
     const map = L.map(mapEl, { scrollWheelZoom: false }); window.mapInstances[dayNum] = map;
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     const latlngs = [];
     events.forEach((e, i) => {
         const icon = L.divIcon({ className: '', html: `<div style="background:${theme.mapMarker};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
-        const cleanDesc = (e.desc || '').replace(/<[^>]*>/g, '');
-        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${window.sanitizeText(cleanDesc)}</strong>`);
+        const cleanDesc = window.sanitizeText(e.desc || '');
+        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${cleanDesc}</strong>`);
         latlngs.push(e.latlng);
     });
     if (latlngs.length > 1) L.polyline(latlngs, { color: theme.mapMarker, weight: 2.5, dashArray: '6 6', opacity: 0.8 }).addTo(map);
@@ -1337,8 +1295,8 @@ window.addUser = function(e) {
 
 window.deleteUser = function(userName) {
     const trip = window.getActiveLedger();
-    if (trip.expenses.some(exp => exp.payer === userName || (exp.involvedUsers && exp.involvedUsers.includes(userName)))) return window.showToast(`${userName} is tied to some expenses.`, 'warning');
-    if (!confirm(`Remove ${userName}?`)) return;
+    if (trip.expenses.some(exp => exp.payer === userName || (exp.involvedUsers && exp.involvedUsers.includes(userName)))) return window.showToast(`${window.sanitizeText(userName)} is tied to some expenses.`, 'warning');
+    if (!confirm(`Remove ${window.sanitizeText(userName)}?`)) return;
     trip.users = trip.users.filter(u => u !== userName); window.renderLedgerDetails(); window.saveLedgerData(trip);
 }
 
@@ -1399,7 +1357,7 @@ window.cancelEdit = function() {
 
 window.executeSettlement = function(fromUser, toUser, amount) {
     const curr = window.getActiveLedger().currency || '$';
-    if(!confirm(`Mark as paid? This records that ${fromUser} paid ${curr}${amount.toFixed(2)} to ${toUser}.`)) return;
+    if(!confirm(`Mark as paid? This records that ${window.sanitizeText(fromUser)} paid ${curr}${amount.toFixed(2)} to ${window.sanitizeText(toUser)}.`)) return;
     const trip = window.getActiveLedger();
     trip.expenses.push({ id: 'SETTLE_' + Date.now(), desc: `[Settlement] Paid to ${toUser}`, amount: parseFloat(amount), payer: fromUser, involvedUsers: [toUser] });
     window.renderLedgerDetails(); window.saveLedgerData(trip);
@@ -1441,7 +1399,7 @@ window.renderDebtChart = function(trip) {
 
     window.chartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels: chartLabels, datasets: [{ data: chartData, borderColor: lineColor, backgroundColor: bgColor, borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: lineColor }] },
+        data: { labels: chartLabels.map(window.sanitizeText), datasets: [{ data: chartData, borderColor: lineColor, backgroundColor: bgColor, borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: lineColor }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => curr + c.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6a90a8', callback: v => curr + v } }, x: { grid: { display: false }, ticks: { color: '#6a90a8' } } } }
     });
 }
@@ -1450,7 +1408,7 @@ window.renderLedgerDetails = function() {
     const trip = window.getActiveLedger(); if (!trip) return;
     const curr = trip.currency || '$';
 
-    document.getElementById('ledger-header-title').textContent = trip.name;
+    document.getElementById('ledger-header-title').textContent = window.sanitizeText(trip.name);
     const userList = document.getElementById('userList'); const expPayer = document.getElementById('expensePayer'); const invCont = document.getElementById('involvedUsersContainer'); const expLog = document.getElementById('expenseLogList');
     userList.innerHTML = ''; expPayer.innerHTML = '<option value="" disabled selected>-- Select Payer --</option>'; invCont.innerHTML = ''; expLog.innerHTML = '';
     
@@ -1534,7 +1492,7 @@ window.renderLedgerDetails = function() {
                     <span><strong style="color:var(--danger); font-weight:700;">${window.sanitizeText(s.from)}</strong> <span style="color:var(--text-muted); font-size:0.9rem; margin:0 4px;">→</span> <strong style="color:var(--success); font-weight:700;">${window.sanitizeText(s.to)}</strong></span>
                     <span class="settlement-amount">${curr}${s.amount.toFixed(2)}</span>
                 </div>
-                <button class="settle-action-btn" style="width:100%;" onclick="window.executeSettlement('${window.sanitizeText(s.from)}', '${window.sanitizeText(s.to)}', ${s.amount})">Mark as Paid</button>
+                <button class="settle-action-btn" style="width:100%;" onclick="window.executeSettlement('${window.sanitizeText(s.from).replace(/'/g, "\\'")}', '${window.sanitizeText(s.to).replace(/'/g, "\\'")}', ${s.amount})">Mark as Paid</button>
             </li>`;
         });
         document.getElementById('copySettlementsBtn').style.display = 'flex'; 
