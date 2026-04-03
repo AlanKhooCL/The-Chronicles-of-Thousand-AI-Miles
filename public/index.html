@@ -447,7 +447,7 @@ const appCheck = initializeAppCheck(app, { provider: new ReCaptchaV3Provider('6L
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Default Seed Data
+// Default Seed Data - Updated to include title and desc
 const defaultTripData = {
     overview: { title: "New Journey", dates: "Upcoming", pax: "2" },
     budget: [
@@ -461,7 +461,7 @@ const defaultTripData = {
         {
             day: 1, date: "Day 1", location: "loc1", title: "Arrival",
             events: [
-                { time: "10:00 AM", desc: "Arrival", icon: "train", expense: 0 }
+                { time: "10:00 AM", title: "Arrival", desc: "Check-in at the accommodation and settle down.", icon: "train", expense: 0 }
             ]
         }
     ]
@@ -716,11 +716,14 @@ window.updatePlannerPax = function(val) { window.tripData.overview.pax = val; wi
 window.updateDayDate = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).date = val; window.schedulePlannerSave(); }
 window.updateDayTitle = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).title = val; window.schedulePlannerSave(); }
 window.updateEventTime = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].time = val; window.schedulePlannerSave(); }
+
+// New Title + Desc updates
+window.updateEventTitle = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].title = val; window.schedulePlannerSave(); }
 window.updateEventDesc = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].desc = val; window.schedulePlannerSave(); }
 
 window.addPlannerEvent = function(dayNum) {
     const day = window.tripData.itinerary.find(d => d.day === dayNum);
-    day.events.push({ time: "12:00 PM", desc: "New Activity", expense: 0, icon: "circle" });
+    day.events.push({ time: "12:00 PM", title: "New Activity", desc: "", expense: 0, icon: "circle" });
     window.schedulePlannerSave(); window.renderPlannerContent();
 }
 
@@ -858,12 +861,15 @@ window.renderTimeline = function() {
     const days = (window.tripData.itinerary || []).filter(d => window.activeFilter === 'all' || d.location === window.activeFilter);
     if (!days.length) return window.isEditMode ? `<div class="text-center py-10"><button onclick="window.addPlannerDay()" class="btn-primary">Add New Day</button></div>` : `<div class="text-center py-10 text-on-surface-variant">No events found.</div>`;
     
-    let html = `<section class="space-y-8 relative"><div class="absolute left-6 top-8 bottom-0 w-0.5 bg-outline-variant/30 md:left-8 z-0"></div>`;
+    // Notice the vertical line is now hidden on mobile (`hidden md:block`)
+    let html = `<section class="space-y-8 relative"><div class="hidden md:block absolute left-8 top-8 bottom-0 w-0.5 bg-outline-variant/30 z-0"></div>`;
     days.forEach(day => {
         const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
-        html += `<div class="relative pl-12 md:pl-20 z-10">
-            <div class="absolute left-0 top-0 w-12 h-12 md:w-16 md:h-16 bg-primary text-white rounded-xl flex flex-col items-center justify-center shadow-lg transform rotate-[-2deg]">
-                <span class="text-[10px] font-bold uppercase tracking-tighter">Day</span><span class="text-2xl font-serif leading-none">${day.day}</span>
+        
+        // Changed layout: Container is flex-col on mobile to stack the badge ON TOP, absolute left on desktop.
+        html += `<div class="relative md:pl-20 z-10 flex flex-col md:block">
+            <div class="mb-3 md:mb-0 md:absolute md:left-0 md:top-0 w-14 h-14 md:w-16 md:h-16 bg-primary text-white rounded-xl flex flex-col items-center justify-center shadow-lg transform rotate-[-2deg] z-20">
+                <span class="text-[10px] font-bold uppercase tracking-tighter">Day</span><span class="text-xl md:text-2xl font-serif leading-none">${day.day}</span>
             </div>
             <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-outline-variant/20">
                 <div class="p-4 sm:p-6 md:p-8">
@@ -881,14 +887,25 @@ window.renderTimeline = function() {
                     <div class="space-y-6 sm:space-y-8 relative pl-2 sm:pl-4 border-l border-outline-variant/10 sm:border-none">`;
         
         (day.events || []).forEach((event, idx) => {
-            const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" class="text-primary hover:underline">${rawDesc}</a>` : rawDesc;
+            // Backward compatibility: If old save only has 'desc', promote it to 'title' visually.
+            const rawTitle = window.sanitizeText(event.title !== undefined ? event.title : (event.desc || 'Activity'));
+            const rawDesc = window.sanitizeText(event.title !== undefined ? event.desc : '');
+            
+            const safeLink = window.sanitizeURL(event.link); 
+            const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" class="text-primary hover:underline">${rawTitle}</a>` : rawTitle;
+            
             html += `<div class="relative group">
                 <div class="hidden sm:block absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-white"></div>
                 <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-start">
                     <div class="sm:w-24 pt-1 shrink-0"><p class="text-xs font-bold text-on-surface-variant font-label outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</p></div>
                     <div class="flex-1 w-full min-w-0">
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
-                            <div class="flex-1 w-full sm:pr-4"><div class="font-bold text-lg leading-tight mb-1 outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div>
+                            
+                            <div class="flex-1 w-full sm:pr-4">
+                                <div class="font-bold text-lg leading-tight mb-1 outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventTitle(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div>
+                                <div class="text-sm text-on-surface-variant leading-relaxed outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${rawDesc || (window.isEditMode ? 'Add description...' : '')}</div>
+                            </div>
+
                             <div class="flex items-center gap-2 self-start sm:self-auto bg-surface-container-low rounded-lg px-2 border border-outline-variant/20 shrink-0">
                                 <span class="text-xs text-on-surface-variant">$</span>
                                 <input type="number" min="0" step="1" class="w-16 sm:w-20 bg-transparent border-none focus:ring-0 text-right p-1 font-serif text-primary needs-edit-mode" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)" ${window.isEditMode ? '' : 'readonly'}>
@@ -937,7 +954,7 @@ window.initMap = function(dayNum) {
     const latlngs = [];
     events.forEach((e, i) => {
         const icon = L.divIcon({ className: '', html: `<div style="background:#256296;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
-        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${window.sanitizeText(e.desc || '')}</strong>`);
+        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${window.sanitizeText(e.title || e.desc || '')}</strong>`);
         latlngs.push(e.latlng);
     });
     if (latlngs.length > 1) L.polyline(latlngs, { color: '#256296', weight: 3, dashArray: '5 5' }).addTo(map);
