@@ -674,9 +674,6 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, quer
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
 
-// Initialize using the exact same implicit config that Ten Thousand Scrolls uses
-const app = initializeApp(firebaseConfig);
-
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider('6LdjNqEsAAAAAEI2m37oYKa3iluG5Mbx_Ge3VImh'),
   isTokenAutoRefreshEnabled: true
