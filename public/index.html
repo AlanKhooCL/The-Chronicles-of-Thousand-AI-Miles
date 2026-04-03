@@ -29,6 +29,8 @@
               "surface-container": "#efeee8",
               "surface-container-high": "#e9e8e1",
               "primary": "#256296",
+              "on-primary": "#f7f9ff",
+              "primary-container": "#90c5ff",
               "primary-dim": "#12568a",
               "secondary": "#685e4e",
               "secondary-container": "#feefda",
@@ -282,21 +284,21 @@
         </div>
     </main>
 
-    <header id="app-header" class="hidden fixed top-0 left-0 right-0 h-20 px-4 md:px-12 z-40 flex justify-between items-center bg-[#fbf9f4]/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(49,51,46,0.05)]">
-        <div class="flex items-center gap-3 md:gap-4 overflow-hidden">
-            <button onclick="window.softReset()" class="text-on-surface-variant hover:text-primary transition-colors flex items-center shrink-0">
-                <i data-lucide="arrow-left" style="width:20px;"></i>
+    <header id="app-header" class="hidden fixed top-0 left-0 right-0 h-20 px-6 md:px-12 z-40 flex justify-between items-center bg-[#fbf9f4]/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(49,51,46,0.05)]">
+        <div class="flex items-center gap-4">
+            <button onclick="window.softReset()" class="text-on-surface-variant hover:text-primary transition-colors flex items-center">
+                <i data-lucide="arrow-left" style="width:24px;"></i>
             </button>
-            <div class="flex flex-col overflow-hidden" id="app-header-left">
+            <div class="flex flex-col" id="app-header-left">
                 </div>
         </div>
-        <div class="flex items-center gap-2 md:gap-4 shrink-0 border-l border-outline-variant/30 pl-4 ml-2" id="app-header-right">
+        <div class="flex items-center gap-4 pl-4 ml-4" id="app-header-right">
             </div>
     </header>
 
-    <main id="planner-view" class="hidden pt-28 px-4 md:px-12 max-w-5xl mx-auto space-y-8 md:space-y-12 pb-24 z-10 relative">
+    <main id="planner-view" class="hidden pt-28 px-4 md:px-12 max-w-5xl mx-auto space-y-12 pb-24 z-10 relative">
         <nav id="filter-nav" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar"></nav>
-        <div id="planner-content" class="space-y-8 md:space-y-12"></div>
+        <div id="planner-content" class="space-y-12"></div>
     </main>
 
     <main id="ledger-view" class="hidden pt-28 px-4 md:px-12 max-w-[600px] mx-auto space-y-8 pb-24 z-10 relative">
@@ -404,7 +406,7 @@
     <div id="edit-confirm-modal" class="fixed-modal">
         <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl border border-outline-variant/20">
             <h3 class="font-headline text-2xl font-bold text-primary mb-2">Enable Edit Mode?</h3>
-            <p class="text-on-surface-variant mb-6 text-sm">Unlock fields to modify your journey records.</p>
+            <p class="text-on-surface-variant mb-6 text-sm">You are about to modify this journey's details. Proceed?</p>
             <div class="flex gap-3 justify-center">
                 <button class="btn-secondary" onclick="document.getElementById('edit-confirm-modal').classList.remove('show')">Cancel</button>
                 <button class="btn-primary" onclick="window.enableEditMode()">Yes, Edit</button>
@@ -414,11 +416,11 @@
 
     <div id="delete-modal" class="fixed-modal">
         <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl border border-outline-variant/20">
-            <h3 class="font-headline text-2xl font-bold text-error mb-2">Erase Forever?</h3>
+            <h3 class="font-headline text-2xl font-bold text-error mb-2">Erase Journey?</h3>
             <p id="delete-modal-msg" class="text-on-surface-variant mb-6 text-sm"></p>
             <div class="flex gap-3 justify-center">
                 <button class="btn-secondary" onclick="window.closeDeleteModal()">Cancel</button>
-                <button class="btn-primary bg-error shadow-none hover:bg-[#8f2b2b]" onclick="window.confirmDeletePlanner()">Erase</button>
+                <button class="btn-primary bg-error shadow-none hover:bg-[#8f2b2b]" onclick="window.confirmDeletePlanner()">Erase Forever</button>
             </div>
         </div>
     </div>
@@ -447,56 +449,99 @@ const auth = getAuth(app);
 // Default Seed Data
 const defaultTripData = {
     overview: { title: "New Journey", dates: "Upcoming", pax: "2" },
-    budget: [ { item: "Flights", amount: 0, icon: "plane" } ],
-    locations: [ { id: 'loc1', name: 'Destination', color: 'primary', image: '' } ],
-    itinerary: [ { day: 1, date: "Day 1", location: "loc1", title: "Arrival", events: [] } ]
+    budget: [
+        { item: "Flights", amount: 1000, icon: "plane" },
+        { item: "Hotel", amount: 500, icon: "building" },
+    ],
+    locations: [
+        { id: 'loc1', name: 'Destination', color: 'primary', image: '' }
+    ],
+    itinerary: [
+        {
+            day: 1, date: "Day 1", location: "loc1", title: "Arrival",
+            events: [
+                { time: "10:00 AM", desc: "Arrival", icon: "train", expense: 0 }
+            ]
+        }
+    ]
 };
 
 // ============================================================
 //  SHARED STATE & UTILS
 // ============================================================
-window.showToast = function(message, type = 'info', duration = 3000) {
+window.showToast = function(message, type = 'info', duration = 3500) {
     const container = document.getElementById('toast-container');
+    const icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'info'}" style="width:18px;"></i> <span>${DOMPurify.sanitize(message)}</span>`;
+    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:18px;"></i> <span>${DOMPurify.sanitize(message)}</span>`;
     container.appendChild(toast);
     lucide.createIcons({ nodes: [toast] });
-    setTimeout(() => { toast.style.animation = 'toastIn 0.4s reverse forwards'; setTimeout(() => toast.remove(), 400); }, duration);
+    setTimeout(() => {
+        toast.style.animation = 'toastIn 0.4s reverse forwards';
+        setTimeout(() => toast.remove(), 400);
+    }, duration);
 }
 
 window.showSaveIndicator = function(state = 'saving') {
     const el = document.getElementById('save-indicator');
-    if (state === 'saving') { el.classList.add('show'); } 
-    else { setTimeout(() => el.classList.remove('show'), 1500); }
+    const txt = document.getElementById('save-indicator-text');
+    el.classList.remove('error');
+    if (state === 'saving') { txt.textContent = 'Saving...'; el.classList.add('show'); } 
+    else if (state === 'saved') { txt.textContent = 'Saved'; setTimeout(() => el.classList.remove('show'), 1500); } 
+    else if (state === 'error') { el.classList.add('error'); txt.textContent = 'Failed'; setTimeout(() => el.classList.remove('show'), 3000); }
 }
 
 window.sanitizeText = function(str) { return str ? DOMPurify.sanitize(String(str), { ALLOWED_TAGS: [] }) : ''; }
+window.sanitizeURL = function(url) {
+    if (!url) return null;
+    try { const u = new URL(url); if (u.protocol === 'http:' || u.protocol === 'https:') return url; } catch (_) {}
+    return null;
+}
+
 window.showLoading = function(msg) { document.getElementById('loading-wrap').classList.add('show'); document.getElementById('loading-message').textContent = msg; }
 window.hideLoading = function() { document.getElementById('loading-wrap').classList.remove('show'); }
 
+// ---- TAB NAVIGATION ----
 window.switchPortalTab = function(portalType, section) {
     const pfix = portalType === 'planner' ? 'ptab' : 'ltab';
     const sfix = portalType === 'planner' ? 'planner-sec' : 'ledger-sec';
+    
     ['load', 'new'].forEach(s => {
         const btn = document.getElementById(`${pfix}-${s}`);
         const sec = document.getElementById(`${sfix}-${s}`);
-        if(s === section) { btn.classList.add('bg-primary', 'text-white'); sec.classList.remove('hidden'); }
-        else { btn.classList.remove('bg-primary', 'text-white'); sec.classList.add('hidden'); }
+        if(btn) {
+            if(s === section) {
+                btn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high');
+                btn.classList.add('bg-primary', 'text-white', 'shadow-sm');
+                sec.classList.remove('hidden');
+            } else {
+                btn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-high');
+                btn.classList.remove('bg-primary', 'text-white', 'shadow-sm');
+                sec.classList.add('hidden');
+            }
+        }
     });
 }
 
 // ============================================================
-//  ROUTING
+//  LANDING PAGE ROUTING
 // ============================================================
 window.showPlannerPortal = function() { document.getElementById('landing-paths-container').classList.add('hidden'); document.getElementById('planner-portal').classList.remove('hidden'); }
 window.showLedgerPortal = function() { document.getElementById('landing-paths-container').classList.add('hidden'); document.getElementById('ledger-portal').classList.remove('hidden'); }
 window.backToPaths = function() { document.getElementById('planner-portal').classList.add('hidden'); document.getElementById('ledger-portal').classList.add('hidden'); document.getElementById('landing-paths-container').classList.remove('hidden'); }
 
-window.hideOverlay = function() { document.getElementById('crossroads-view').style.opacity = '0'; setTimeout(() => { document.getElementById('crossroads-view').style.display = 'none'; }, 1000); }
+window.hideOverlay = function() {
+    const overlay = document.getElementById('crossroads-view');
+    overlay.style.opacity = '0';
+    setTimeout(() => { overlay.style.display = 'none'; }, 1000);
+}
 
 window.softReset = function() {
-    window.tripData = null; window.isEditMode = false;
+    window.tripData = null; window.activeFilter = 'all'; window.isEditMode = false;
+    Object.values(window.mapInstances || {}).forEach(m => { try { m.remove(); } catch(_){} });
+    window.mapInstances = {}; window.openMaps = new Set();
+    
     document.getElementById('planner-view').classList.add('hidden');
     document.getElementById('ledger-view').classList.add('hidden');
     document.getElementById('app-header').classList.add('hidden');
@@ -504,183 +549,249 @@ window.softReset = function() {
 
     const url = new URL(window.location); url.searchParams.delete('planner'); url.searchParams.delete('ledger'); window.history.pushState({}, '', url);
 
-    const overlay = document.getElementById('crossroads-view'); overlay.style.display = 'flex'; window.backToPaths(); setTimeout(() => { overlay.style.opacity = '1'; }, 50);
+    const overlay = document.getElementById('crossroads-view');
+    overlay.style.display = 'flex';
+    window.backToPaths();
+    setTimeout(() => { overlay.style.opacity = '1'; }, 50);
 }
 
-// ============================================================
-//  PLANNER LOGIC
-// ============================================================
-window.tripData = null; window.isEditMode = false; window.activeFilter = 'all'; window.saveTimeout = null; window.mapInstances = {}; window.openMaps = new Set();
+document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
 
+// ============================================================
+//  FIREBASE AUTH & INITIALIZATION
+// ============================================================
+signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
+
+onAuthStateChanged(auth, user => {
+    if (user) {
+        window.fetchPlannerTrips().then(() => {
+            window.fetchLedgerTrips().then(() => {
+                const params = new URLSearchParams(window.location.search);
+                const pTrip = params.get('planner'); const lTrip = params.get('ledger');
+                if (pTrip) { window.showPlannerPortal(); window.loadPastTrip(pTrip); } 
+                else if (lTrip) {
+                    window.showLedgerPortal();
+                    if(window.ledgerTrips.some(t => t.id === lTrip)) { window.openLedger(lTrip); } 
+                    else { window.showToast("Ledger not found.", "error"); }
+                }
+            });
+        });
+    }
+});
+
+
+// ============================================================
+//  APP 1: PLANNER LOGIC (WITH EDIT MODE)
+// ============================================================
+window.tripData = null;
+window.activeFilter = 'all';
+window.openMaps = new Set();
+window.mapInstances = {};
+window.saveTimeout = null;
+window.isEditMode = false;
+
+const themeStyles = {
+    primary: { dot: '#256296', border: 'border-primary', bg: 'bg-primary/10' },
+    tertiary: { dot: '#426659', border: 'border-tertiary', bg: 'bg-tertiary/10' },
+    secondary: { dot: '#685e4e', border: 'border-secondary-dim', bg: 'bg-secondary-dim/10' },
+    error: { dot: '#ac3434', border: 'border-error', bg: 'bg-error/10' }
+};
+window.getTheme = function(colorKey) { return themeStyles[colorKey] || themeStyles.primary; }
+
+// Edit Mode Interceptor
 document.addEventListener('click', (e) => {
+    const plannerView = document.getElementById('planner-view');
+    if (!plannerView || plannerView.classList.contains('hidden')) return;
+
     const target = e.target.closest('.needs-edit-mode');
     if (target && !window.isEditMode) {
         e.preventDefault(); e.stopPropagation();
+        if(target.tagName === 'INPUT') target.blur();
         window.showEditTooltip();
     }
 }, true);
 
 window.showEditTooltip = function() {
     const btn = document.getElementById('edit-mode-btn');
-    if(btn) { btn.classList.add('ring-4', 'ring-primary/50'); setTimeout(() => btn.classList.remove('ring-4', 'ring-primary/50'), 1000); }
-    window.showToast("Tap 'Edit' at the top to modify.", "info");
+    if(!btn) return;
+    btn.classList.add('ring-4', 'ring-primary/50', 'scale-105');
+    setTimeout(() => btn.classList.remove('ring-4', 'ring-primary/50', 'scale-105'), 1000);
+    window.showToast("Enable Edit Mode to make changes.", "info", 2000);
 }
 
 window.requestEditMode = function() {
-    if (window.isEditMode) { window.isEditMode = false; window.initPlannerUI(); window.showToast("Saving changes...", "success"); }
-    else { document.getElementById('edit-confirm-modal').classList.add('show'); }
+    if (window.isEditMode) {
+        window.isEditMode = false; window.renderPlannerHeader(); window.renderPlannerContent(); window.showToast("Edit mode disabled.", "info");
+    } else {
+        document.getElementById('edit-confirm-modal').classList.add('show');
+    }
 }
-window.enableEditMode = function() { document.getElementById('edit-confirm-modal').classList.remove('show'); window.isEditMode = true; window.initPlannerUI(); }
+window.enableEditMode = function() {
+    document.getElementById('edit-confirm-modal').classList.remove('show');
+    window.isEditMode = true; window.renderPlannerHeader(); window.renderPlannerContent(); window.showToast("Edit mode enabled.", "success");
+}
 
 window.fetchPlannerTrips = async function() {
     const dropdown = document.getElementById('saved-trips-dropdown');
     try {
-        const snapshot = await getDocs(query(collection(db, "planner_trips")));
-        const trips = []; snapshot.forEach(doc => { trips.push({ id: doc.id, ...doc.data() }); });
-        dropdown.innerHTML = trips.map(t => `<option value="${t.id}">${window.sanitizeText(t.overview?.title)}</option>`).join('');
+        const q = query(collection(db, "planner_trips"));
+        const snapshot = await getDocs(q);
+        const trips = [];
+        snapshot.forEach(doc => { trips.push({ id: doc.id, ...doc.data() }); });
+        
+        if (trips.length === 0) {
+            const newDocRef = doc(collection(db, "planner_trips"));
+            const seededTrip = { ...defaultTripData, id: newDocRef.id };
+            await setDoc(newDocRef, seededTrip);
+            trips.push(seededTrip);
+        }
+
+        dropdown.innerHTML = trips.map(t => `<option value="${t.id}">${window.sanitizeText(t.overview?.title || 'Unknown')}</option>`).join('');
         dropdown.disabled = false; document.getElementById('load-btn').disabled = false;
-    } catch (err) { dropdown.innerHTML = '<option value="">Network error</option>'; }
+    } catch (err) { console.error(err); dropdown.innerHTML = '<option value="">Network error</option>'; }
+}
+
+window.createPlannerTrip = async function(e) {
+    e.preventDefault();
+    const title = document.getElementById('newTripTitle').value.trim();
+    const dates = document.getElementById('newTripDates').value.trim();
+    window.showLoading('Inscribing...');
+    try {
+        const newDocRef = doc(collection(db, "planner_trips"));
+        const newTrip = {
+            id: newDocRef.id,
+            overview: { title: title, dates: dates, pax: "1" },
+            budget: [ { item: "Flights", amount: 0, icon: "plane" } ],
+            locations: [ { id: 'loc1', name: 'Main Location', color: 'primary', image: '' } ],
+            itinerary: [ { day: 1, date: "Day 1", location: "loc1", title: "Arrival", events: [] } ]
+        };
+        await setDoc(newDocRef, newTrip);
+        document.getElementById('newTripTitle').value = ''; document.getElementById('newTripDates').value = '';
+        await window.fetchPlannerTrips();
+        window.loadPastTrip(newDocRef.id);
+    } catch (err) { window.showToast('Failed to create.', 'error'); }
 }
 
 window.loadPastTrip = async function(forcedId = null) {
     const docId = forcedId || document.getElementById('saved-trips-dropdown').value;
     if (!docId) return;
-    window.showLoading('Accessing records...');
+    window.showLoading('Loading Grimoire...');
+    window.isEditMode = false;
     try {
-        const docSnap = await getDoc(doc(db, "planner_trips", docId));
+        const docRef = doc(db, "planner_trips", docId);
+        const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             window.tripData = { id: docSnap.id, ...docSnap.data() };
+            const url = new URL(window.location); url.searchParams.set('planner', window.tripData.id); url.searchParams.delete('ledger'); window.history.pushState({}, '', url);
             window.hideOverlay();
             setTimeout(() => {
                 document.getElementById('app-header').classList.remove('hidden');
                 document.getElementById('planner-view').classList.remove('hidden');
                 window.initPlannerUI();
             }, 1000);
-        }
-    } finally { window.hideLoading(); }
+        } else { window.showToast('Not found.', 'error'); }
+    } catch (err) { window.showToast('Error loading.', 'error'); } 
+    finally { window.hideLoading(); }
+}
+
+window.initPlannerUI = function() {
+    window.renderPlannerHeader();
+    window.renderPlannerFilters();
+    window.renderPlannerContent();
 }
 
 window.schedulePlannerSave = function() {
     clearTimeout(window.saveTimeout); window.showSaveIndicator('saving');
     window.saveTimeout = setTimeout(async () => {
-        try { await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData); window.showSaveIndicator('saved'); } catch (err) {}
+        try { await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData); window.showSaveIndicator('saved'); } 
+        catch (err) { window.showSaveIndicator('error'); }
     }, 1200);
 }
 
-window.addBaseEstimate = function() { window.tripData.budget.push({ item: "New Expense", amount: 0, icon: "circle" }); window.schedulePlannerSave(); window.initPlannerUI(); }
-window.deleteBaseEstimate = function(idx) { if(confirm("Remove?")) { window.tripData.budget.splice(idx, 1); window.schedulePlannerSave(); window.initPlannerUI(); } }
-window.addPlannerEvent = function(dayNum) { window.tripData.itinerary.find(d => d.day === dayNum).events.push({ time: "12:00 PM", desc: "Activity", expense: 0 }); window.schedulePlannerSave(); window.initPlannerUI(); }
-window.deletePlannerEvent = function(dayNum, idx) { if(confirm("Delete?")) { window.tripData.itinerary.find(d => d.day === dayNum).events.splice(idx, 1); window.schedulePlannerSave(); window.initPlannerUI(); } }
-window.addPlannerDay = function() { const d = window.tripData.itinerary.length + 1; window.tripData.itinerary.push({ day: d, date: "New Date", location: 'loc1', title: "New Day", events: [] }); window.schedulePlannerSave(); window.initPlannerUI(); }
+// Inline Edits
+window.updatePlannerTitle = function(val) { window.tripData.overview.title = val; window.schedulePlannerSave(); }
+window.updatePlannerDates = function(val) { window.tripData.overview.dates = val; window.schedulePlannerSave(); }
+window.updatePlannerPax = function(val) { window.tripData.overview.pax = val; window.schedulePlannerSave(); }
+window.updateDayDate = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).date = val; window.schedulePlannerSave(); }
+window.updateDayTitle = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).title = val; window.schedulePlannerSave(); }
+window.updateEventTime = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].time = val; window.schedulePlannerSave(); }
+window.updateEventDesc = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].desc = val; window.schedulePlannerSave(); }
+
+window.addPlannerEvent = function(dayNum) {
+    const day = window.tripData.itinerary.find(d => d.day === dayNum);
+    day.events.push({ time: "12:00 PM", desc: "New Activity", expense: 0, icon: "circle" });
+    window.schedulePlannerSave(); window.renderPlannerContent();
+}
+
+window.deletePlannerEvent = function(dayNum, idx) {
+    if(!confirm("Delete this event?")) return;
+    window.tripData.itinerary.find(d => d.day === dayNum).events.splice(idx, 1);
+    window.schedulePlannerSave(); window.renderPlannerContent(); window.renderPlannerHeader();
+}
+
+window.addPlannerDay = function() {
+    const newDayNum = window.tripData.itinerary.length ? Math.max(...window.tripData.itinerary.map(d => d.day)) + 1 : 1;
+    window.tripData.itinerary.push({ day: newDayNum, date: "New Date", location: window.tripData.locations?.[0]?.id || 'loc1', title: "New Day", events: [] });
+    window.schedulePlannerSave(); window.renderPlannerContent();
+}
+
+window.addBaseEstimate = function() {
+    if(!window.tripData.budget) window.tripData.budget = [];
+    window.tripData.budget.push({ item: "New Expense", amount: 0, icon: "circle-dollar-sign" });
+    window.schedulePlannerSave(); window.renderPlannerContent(); window.renderPlannerHeader();
+}
+
+window.deleteBaseEstimate = function(idx) {
+    if(!confirm("Remove this estimate?")) return;
+    window.tripData.budget.splice(idx, 1);
+    window.schedulePlannerSave(); window.renderPlannerContent(); window.renderPlannerHeader();
+}
 
 window.renderPlannerHeader = function() {
-    const grandTotal = (window.tripData.budget || []).reduce((s, b) => s + (b.amount || 0), 0) + window.tripData.itinerary.reduce((s, day) => s + day.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0);
+    const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
     document.getElementById('app-header-left').innerHTML = `
-        <div class="font-serif italic text-xl md:text-2xl text-primary outline-none whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px] sm:max-w-xs md:max-w-md needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.overview.title=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(window.tripData.overview.title)}</div>
-        <div class="flex items-center gap-1 mt-1 shrink-0">
-            <span class="px-1.5 py-0.5 bg-secondary-container text-[9px] font-bold rounded uppercase outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.overview.dates=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(window.tripData.overview.dates)}</span>
-            <span class="px-1.5 py-0.5 bg-surface-container-highest text-[9px] font-bold rounded uppercase outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.overview.pax=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(window.tripData.overview.pax)} Pax</span>
+        <div class="font-serif italic text-2xl text-primary outline-none whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] md:max-w-md needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerTitle(this.innerText)">${window.sanitizeText(window.tripData.overview.title)}</div>
+        <div class="flex items-center gap-2 mt-1">
+            <span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded uppercase tracking-tighter outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerDates(this.innerText)">${window.sanitizeText(window.tripData.overview.dates)}</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-tighter outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerPax(this.innerText)">${window.sanitizeText(window.tripData.overview.pax || '1')} Pax</span>
         </div>
     `;
     document.getElementById('app-header-right').innerHTML = `
-        <div class="hidden sm:flex flex-col items-end mr-2 pr-4 border-r border-outline-variant/30">
-            <p class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">Total</p>
-            <p class="font-serif text-lg text-primary font-bold">$${grandTotal.toLocaleString()}</p>
+        <div class="hidden md:flex flex-col items-end mr-4 pr-4 border-r border-outline-variant/30">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none mb-1">Grand Total</p>
+            <p class="font-serif text-2xl text-primary font-bold">$${grandTotal.toLocaleString()}</p>
         </div>
-        <button id="edit-mode-btn" onclick="window.requestEditMode()" class="px-3 py-1.5 font-bold rounded-full text-[10px] transition-all flex items-center gap-1.5 ${window.isEditMode ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-primary/10 border border-outline-variant/30'}">
-            <i data-lucide="${window.isEditMode ? 'check' : 'edit-3'}" style="width:12px;"></i> ${window.isEditMode ? 'Done' : 'Edit'}
+        <button id="edit-mode-btn" onclick="window.requestEditMode()" class="mr-2 px-4 py-2 font-bold rounded-full text-xs transition-colors flex items-center gap-2 ${window.isEditMode ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-primary/10'}">
+            <i data-lucide="${window.isEditMode ? 'check' : 'edit-3'}" style="width:14px;"></i> ${window.isEditMode ? 'Done' : 'Edit'}
         </button>
-        ${window.isEditMode ? `<button onclick="window.openDeleteModal()" class="text-error p-1"><i data-lucide="trash-2" style="width:18px;"></i></button>` : ''}
+        <button onclick="window.copyPlannerLink()" class="text-on-surface-variant hover:text-primary transition-colors p-2"><i data-lucide="share" style="width:20px;"></i></button>
+        ${window.isEditMode ? `<button onclick="window.openDeleteModal()" class="text-on-surface-variant hover:text-error transition-colors p-2"><i data-lucide="trash-2" style="width:20px;"></i></button>` : ''}
     `;
     lucide.createIcons({ nodes: [document.getElementById('app-header')] });
 }
 
-window.renderPlannerContent = function() {
-    let html = `<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">`;
-    (window.tripData.budget || []).forEach((item, idx) => {
-        html += `<div class="bg-white p-5 rounded-xl border border-outline-variant/20 relative">
-            ${window.isEditMode ? `<button onclick="window.deleteBaseEstimate(${idx})" class="absolute top-3 right-3 text-error/40 hover:text-error p-1"><i data-lucide="x" style="width:14px;"></i></button>` : ''}
-            <div class="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Estimate</div>
-            <div class="text-sm font-bold mb-3 needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.budget[${idx}].item=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(item.item)}</div>
-            <div class="flex items-center gap-1 border-b-2 border-outline-variant/20 focus-within:border-primary transition-colors">
-                <span class="text-primary font-serif">$</span>
-                <input type="number" value="${item.amount}" onchange="window.tripData.budget[${idx}].amount=parseInt(this.value)||0;window.schedulePlannerSave();window.initPlannerUI()" class="bg-transparent border-none focus:ring-0 w-full p-0 font-serif text-xl needs-edit-mode" ${window.isEditMode ? '' : 'readonly'}>
-            </div>
-        </div>`;
+window.renderPlannerFilters = function() {
+    const nav = document.getElementById('filter-nav');
+    let html = `<button onclick="window.setFilter('all')" class="px-6 py-2 rounded-full text-sm font-label whitespace-nowrap transition-colors ${window.activeFilter === 'all' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">Full Itinerary</button>`;
+    (window.tripData.locations || []).forEach(loc => {
+        html += `<button onclick="window.setFilter('${window.sanitizeText(loc.id)}')" class="px-6 py-2 rounded-full text-sm font-label whitespace-nowrap transition-colors ${window.activeFilter === loc.id ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">${window.sanitizeText(loc.name)}</button>`;
     });
-    if(window.isEditMode) html += `<button onclick="window.addBaseEstimate()" class="border-2 border-dashed border-outline-variant/30 rounded-xl p-5 flex items-center justify-center text-on-surface-variant hover:border-primary/50 hover:text-primary transition-all"><i data-lucide="plus-circle" class="mr-2" style="width:18px;"></i>Add</button>`;
-    html += `</section>`;
-    
-    const activityTotal = window.tripData.itinerary.reduce((s, d) => s + d.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0);
-    html += `<section class="bg-surface-container-low p-6 rounded-2xl border-l-4 border-secondary-container">
-        <div class="flex justify-between items-center mb-4">
-            <div><h3 class="font-serif text-lg">Activity Spend</h3>${window.isEditMode ? `<p class="text-xs text-on-surface-variant cursor-pointer hover:text-error" onclick="window.zeroisePlannerExpenses()">Reset Actuals</p>` : `<p class="text-xs text-on-surface-variant">Accumulated daily costs</p>`}</div>
-            <div class="text-right"><p class="font-serif text-2xl font-bold text-primary">$${activityTotal.toLocaleString()}</p></div>
-        </div>
-        <div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full transition-all duration-700" style="width: ${Math.min(100, (activityTotal/5000)*100)}%"></div></div>
-    </section>`;
-
-    html += `<section class="space-y-8 md:space-y-12 relative"><div class="absolute left-[1.15rem] md:left-8 top-8 bottom-0 w-0.5 bg-outline-variant/30 z-0"></div>`;
-
-    window.tripData.itinerary.forEach((day, di) => {
-        const dayExp = day.events.reduce((s,e)=>s+e.expense,0);
-        const hasMap = day.events.some(e => e.latlng && e.latlng.length === 2);
-        
-        html += `<div class="relative pl-12 md:pl-20 z-10">
-            <div class="absolute left-0 top-0 w-10 h-10 md:w-16 md:h-16 bg-primary text-white rounded-xl flex flex-col items-center justify-center shadow-lg transform rotate-[-2deg]">
-                <span class="text-[8px] md:text-[10px] font-bold uppercase tracking-tighter">Day</span><span class="text-xl md:text-2xl font-serif leading-none">${day.day}</span>
-            </div>
-            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-outline-variant/20">
-                <div class="p-5 md:p-8">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
-                        <div>
-                            <p class="text-xs font-bold text-tertiary uppercase tracking-widest mb-1 outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.itinerary[${di}].date=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(day.date)}</p>
-                            <h4 class="font-serif text-2xl md:text-3xl outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.itinerary[${di}].title=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(day.title)}</h4>
-                        </div>
-                        <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 border-outline-variant/20 pt-4 sm:pt-0">
-                            <div class="text-left sm:text-right"><p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">Day Cost</p><p class="font-serif text-xl text-primary">$${dayExp.toLocaleString()}</p></div>
-                            ${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-low hover:bg-surface-container-high rounded-lg border border-outline-variant/20 text-sm font-label transition-colors shrink-0"><i data-lucide="map" style="width:14px;"></i> Map</button>` : ''}
-                        </div>
-                    </div>
-                    ${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}
-                    <div class="space-y-6 md:space-y-8 relative md:pl-4">`;
-                    
-        day.events.forEach((ev, ei) => {
-            const safeLink = window.sanitizeURL(ev.link); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" class="text-primary hover:underline">${window.sanitizeText(ev.desc)}</a>` : window.sanitizeText(ev.desc);
-            html += `<div class="relative group">
-                <div class="hidden md:block absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-white"></div>
-                <div class="flex flex-col md:flex-row gap-2 md:gap-4 md:items-start border-l-2 md:border-l-0 border-outline-variant/30 pl-4 md:pl-0 ml-1 md:ml-0">
-                    <div class="w-full md:w-24 md:pt-1 shrink-0"><p class="text-xs font-bold text-primary md:text-on-surface-variant font-label outline-none needs-edit-mode inline-block bg-primary/10 md:bg-transparent px-2 py-1 md:p-0 rounded" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.itinerary[${di}].events[${ei}].time=this.innerText;window.schedulePlannerSave()">${window.sanitizeText(ev.time)}</p></div>
-                    <div class="flex-1"><div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                        <div class="flex-1 pr-0 sm:pr-4"><div class="font-bold text-base md:text-lg leading-tight mb-1 outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.itinerary[${di}].events[${ei}].desc=this.innerHTML;window.schedulePlannerSave()">${nameHtml}</div></div>
-                        <div class="flex items-center gap-2 bg-surface-container-low rounded-lg px-2 py-1 border border-outline-variant/20 self-start shrink-0">
-                            <span class="text-xs text-on-surface-variant">$</span>
-                            <input type="number" min="0" step="1" value="${ev.expense}" onchange="window.tripData.itinerary[${di}].events[${ei}].expense=parseInt(this.value)||0;window.schedulePlannerSave();window.initPlannerUI()" class="w-16 md:w-20 bg-transparent border-none focus:ring-0 text-right p-1 font-serif text-primary needs-edit-mode" ${window.isEditMode ? '' : 'readonly'}>
-                            ${window.isEdit ? `<button onclick="window.deletePlannerEvent(${day.day},${ei})" class="text-error/30 hover:text-error transition-colors p-1"><i data-lucide="x" style="width:14px;"></i></button>` : ''}
-                        </div>
-                    </div></div>
-                </div>
-            </div>`;
-        });
-        if(window.isEdit) html += `<button onclick="window.addPlannerEvent(${day.day})" class="mt-6 w-full py-3 border border-dashed border-outline-variant/40 rounded-xl text-[10px] font-bold uppercase text-on-surface-variant hover:text-primary hover:border-primary transition-all">Add Activity</button>`;
-        html += `</div></div></div>`;
-    });
-    
-    html += `</section>`;
-    if(window.isEdit) html += `<div class="flex justify-center pt-8"><button onclick="window.addPlannerDay()" class="btn-primary shadow-xl"><i data-lucide="sparkles" style="width:20px;"></i> Inscribe Next Day</button></div>`;
-
-    document.getElementById('planner-content').innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['onblur','onclick','onchange','contenteditable','readonly'] });
-    lucide.createIcons({nodes:[document.getElementById('planner-view')]});
+    nav.innerHTML = html;
 }
 
-window.zeroisePlannerExpenses = function() { window.tripData.itinerary.forEach(day => day.events.forEach(e => e.expense = 0)); window.schedulePlannerSave(); window.initPlannerUI(); }
-window.initPlannerUI = function() { window.renderPlannerHeader(); window.renderPlannerContent(); }
+window.renderPlannerContent = function() {
+    let html = '';
+    if (window.activeFilter === 'all') html += window.renderBudget();
+    html += window.renderExpenseSummary();
+    html += window.renderTimeline();
+    document.getElementById('planner-content').innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'onchange', 'onclick', 'onblur', 'contenteditable', 'readonly'] });
+    lucide.createIcons({ nodes: [document.getElementById('planner-content')] });
+}
 
-window.createPlannerTrip = async function(e) {
-    e.preventDefault(); window.showLoading('Building journey...');
-    const newDoc = doc(collection(db, "planner_trips"));
-    const newTrip = {...defaultTripData, id: newDoc.id, overview: { title: document.getElementById('newTripTitle').value, dates: document.getElementById('newTripDates').value, pax: "2" }};
-    await setDoc(newDoc, newTrip); window.loadPastTrip(newDoc.id);
+window.setFilter = function(filterId) {
+    window.activeFilter = filterId;
+    Object.values(window.mapInstances).forEach(m => { try { m.remove(); } catch(_){} }); window.mapInstances = {}; window.openMaps.clear();
+    window.renderPlannerFilters(); window.renderPlannerContent(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Planner Deletion
@@ -692,6 +803,121 @@ window.confirmDeletePlanner = async function() {
     catch (e) { window.showToast('Network error', 'error'); }
 }
 
+window.getTotalActivityExpenses = function() { return window.tripData.itinerary.reduce((s, day) => s + day.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0); }
+window.getDayExpenses = function(dayNum) { const day = window.tripData.itinerary.find(d => d.day === dayNum); return day ? day.events.reduce((s, e) => s + (e.expense || 0), 0) : 0; }
+window.getLocationExpenses = function(locId) { return window.tripData.itinerary.filter(d => d.location === locId).reduce((s, day) => s + day.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0); }
+window.getBaseBudgetTotal = function() { return (window.tripData.budget || []).reduce((s, b) => s + (b.amount || 0), 0); }
+
+window.renderBudget = function() {
+    if (!window.tripData.budget || !window.tripData.budget.length) {
+        if(window.isEditMode) {
+            return `<section class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-surface-container-low p-6 rounded-xl shadow-sm border-2 border-dashed border-outline-variant/40 flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-surface-container-high transition-colors" onclick="window.addBaseEstimate()"><div class="text-center text-on-surface-variant"><i data-lucide="plus-circle" class="mx-auto mb-2" style="width:24px;"></i><span class="font-bold text-sm">Add Estimate</span></div></div></section>`;
+        }
+        return '';
+    }
+    
+    let html = `<section class="grid grid-cols-1 md:grid-cols-3 gap-6">`;
+    window.tripData.budget.forEach((item, idx) => {
+        html += `<div class="bg-white p-6 rounded-xl shadow-sm border-b-2 border-primary/20 relative group">
+            ${window.isEditMode ? `<button onclick="window.deleteBaseEstimate(${idx})" class="absolute top-4 right-4 text-outline-variant hover:text-error transition-colors p-1"><i data-lucide="x" style="width:16px;"></i></button>` : ''}
+            <div class="flex justify-between items-start mb-4"><i data-lucide="${window.sanitizeText(item.icon || 'circle')}" class="text-primary" style="width:20px;"></i><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Base Estimate</span></div>
+            <label class="block text-xs font-label font-bold text-on-surface-variant mb-1 needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.budget[${idx}].item=this.innerText;window.schedulePlannerSave();">${window.sanitizeText(item.item)}</label>
+            <div class="relative">
+            <span class="absolute left-0 bottom-2 text-primary font-serif">$</span>
+            <input class="needs-edit-mode w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary pt-2 pb-1 pl-4 font-serif text-xl focus:ring-0 outline-none" type="number" min="0" value="${item.amount || 0}" onchange="window.updateBaseExpense(${idx}, this.value)" ${window.isEditMode ? '' : 'readonly'}/></div>
+        </div>`;
+    });
+    if (window.isEditMode) {
+        html += `<div class="bg-surface-container-low p-6 rounded-xl shadow-sm border-2 border-dashed border-outline-variant/40 flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-surface-container-high transition-colors" onclick="window.addBaseEstimate()">
+            <div class="text-center text-on-surface-variant"><i data-lucide="plus-circle" class="mx-auto mb-2" style="width:24px;"></i><span class="font-bold text-sm">Add Estimate</span></div>
+        </div>`;
+    }
+    return html + '</section>';
+}
+
+window.updateBaseExpense = function(idx, val) { window.tripData.budget[idx].amount = Math.max(0, parseInt(val) || 0); window.schedulePlannerSave(); window.renderPlannerHeader(); document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); }
+
+window.renderExpenseSummary = function() {
+    const activityTotal = window.activeFilter === 'all' ? window.getTotalActivityExpenses() : window.getLocationExpenses(window.activeFilter);
+    const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
+    const pct = Math.min((window.getTotalActivityExpenses() / (grandTotal || 1)) * 100, 100);
+    return `<section id="expense-summary-section" class="bg-surface-container-low p-8 rounded-2xl border-l-4 border-secondary-container">
+        <div class="flex justify-between items-center mb-6">
+            <div><h3 class="font-serif text-xl">Activity Spend Summary</h3>
+            ${window.isEditMode ? `<p class="text-sm text-on-surface-variant cursor-pointer hover:text-error transition-colors" onclick="window.zeroisePlannerExpenses()">Reset Actuals to 0</p>` : `<p class="text-sm text-on-surface-variant">Daily excursions and costs</p>`}
+            </div>
+            <div class="text-right"><p class="text-lg font-bold font-serif">$${activityTotal.toLocaleString()}</p></div>
+        </div>
+        <div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div></div>
+    </section>`;
+}
+window.zeroisePlannerExpenses = function() { window.tripData.itinerary.forEach(day => day.events.forEach(e => e.expense = 0)); window.schedulePlannerSave(); window.renderPlannerHeader(); window.renderPlannerContent(); }
+
+window.renderTimeline = function() {
+    const days = (window.tripData.itinerary || []).filter(d => window.activeFilter === 'all' || d.location === window.activeFilter);
+    if (!days.length) return window.isEditMode ? `<div class="text-center py-10"><button onclick="window.addPlannerDay()" class="btn-primary">Add New Day</button></div>` : `<div class="text-center py-10 text-on-surface-variant">No events found.</div>`;
+    
+    let html = `<section class="space-y-8 relative"><div class="absolute left-6 top-8 bottom-0 w-0.5 bg-outline-variant/30 md:left-8 z-0"></div>`;
+    days.forEach(day => {
+        const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
+        html += `<div class="relative pl-14 md:pl-20 z-10">
+            <div class="absolute left-0 top-0 w-12 h-12 md:w-16 md:h-16 bg-primary text-white rounded-xl flex flex-col items-center justify-center shadow-lg transform rotate-[-2deg]">
+                <span class="text-[10px] font-bold uppercase tracking-tighter">Day</span><span class="text-2xl font-serif leading-none">${day.day}</span>
+            </div>
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-outline-variant/20">
+                <div class="p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <p class="text-xs font-bold text-tertiary uppercase tracking-widest mb-1 outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateDayDate(${day.day}, this.innerText)">${window.sanitizeText(day.date)}</p>
+                            <h4 class="font-serif text-3xl outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateDayTitle(${day.day}, this.innerText)">${window.sanitizeText(day.title)}</h4>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-right"><p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">Day Cost</p><p class="font-serif text-xl text-primary" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</p></div>
+                            ${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-low hover:bg-surface-container-high rounded-lg border border-outline-variant/20 text-sm font-label transition-colors"><i data-lucide="map" style="width:14px;"></i> Map</button>` : ''}
+                        </div>
+                    </div>
+                    ${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}
+                    <div class="space-y-8 relative pl-4">`;
+        
+        (day.events || []).forEach((event, idx) => {
+            const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" class="text-primary hover:underline">${rawDesc}</a>` : rawDesc;
+            html += `<div class="relative group">
+                <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-white"></div>
+                <div class="flex flex-col md:flex-row gap-4 md:items-start">
+                    <div class="w-24 pt-1 shrink-0"><p class="text-xs font-bold text-on-surface-variant font-label outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</p></div>
+                    <div class="flex-1"><div class="flex justify-between items-start">
+                        <div class="flex-1 pr-4"><div class="font-bold text-lg leading-tight mb-1 outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div>
+                        <div class="flex items-center gap-2 bg-surface-container-low rounded-lg px-2 border border-outline-variant/20">
+                            <span class="text-xs text-on-surface-variant">$</span>
+                            <input type="number" min="0" step="1" class="w-20 bg-transparent border-none focus:ring-0 text-right p-1 font-serif text-primary needs-edit-mode" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)" ${window.isEditMode ? '' : 'readonly'}>
+                            ${window.isEditMode ? `<button onclick="window.deletePlannerEvent(${day.day}, ${idx})" class="text-outline-variant hover:text-error transition-colors p-1"><i data-lucide="x" style="width:14px;"></i></button>` : ''}
+                        </div>
+                    </div></div>
+                </div>
+            </div>`;
+        });
+        
+        if (window.isEditMode) {
+            html += `</div><button onclick="window.addPlannerEvent(${day.day})" class="mt-8 w-full py-4 border-2 border-dashed border-outline-variant/30 rounded-xl text-on-surface-variant hover:border-primary/40 hover:text-primary transition-all flex items-center justify-center gap-2 group"><i data-lucide="plus-circle" class="group-hover:scale-110 transition-transform" style="width:20px;"></i><span class="text-sm font-label font-bold uppercase tracking-widest">Add Event</span></button></div></div></div>`;
+        } else {
+            html += `</div></div></div></div>`;
+        }
+    });
+    if(window.isEditMode) {
+        html += `</section><div class="pt-8 flex justify-center"><button onclick="window.addPlannerDay()" class="btn-primary shadow-xl"><i data-lucide="sparkles" style="width:20px;"></i> Inscribe Next Day</button></div>`;
+    } else {
+        html += `</section>`;
+    }
+    return html;
+}
+
+window.updatePlannerExpense = function(dayNum, idx, val) { 
+    window.tripData.itinerary.find(d => d.day === dayNum).events[idx].expense = Math.max(0, parseInt(val) || 0); 
+    window.schedulePlannerSave(); window.renderPlannerHeader(); 
+    document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); 
+    const badge = document.getElementById(`day-expense-${dayNum}`); if (badge) badge.textContent = `$${window.getDayExpenses(dayNum).toLocaleString()}`;
+}
+
 window.toggleMap = function(dayNum) {
     const container = document.getElementById(`map-container-${dayNum}`); const btn = document.getElementById(`map-toggle-${dayNum}`);
     if (window.openMaps.has(dayNum)) { container.classList.remove('open'); window.openMaps.delete(dayNum); if(btn) btn.classList.remove('bg-primary', 'text-white'); } 
@@ -701,7 +927,10 @@ window.initMap = function(dayNum) {
     const mapEl = document.getElementById(`map-${dayNum}`); if (!mapEl || window.mapInstances[dayNum]) return;
     const day = window.tripData.itinerary.find(d => d.day === dayNum); const events = (day.events || []).filter(e => e.latlng && e.latlng.length === 2); if (!events.length) return;
     const map = L.map(mapEl, { scrollWheelZoom: false }); window.mapInstances[dayNum] = map;
+    
+    // Light mode map tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+    
     const latlngs = [];
     events.forEach((e, i) => {
         const icon = L.divIcon({ className: '', html: `<div style="background:#256296;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
@@ -713,37 +942,287 @@ window.initMap = function(dayNum) {
     setTimeout(() => { try { map.invalidateSize(); } catch(_) {} }, 450);
 }
 
+window.copyPlannerLink = function() {
+    const url = new URL(window.location.href); url.searchParams.set('planner', window.tripData.id); url.searchParams.delete('ledger');
+    navigator.clipboard.writeText(url.href).then(() => { window.showToast('Link Copied!', 'success'); });
+}
+
 // ============================================================
-//  LEDGER LOGIC (MINIFIED FOR BREVITY)
+//  APP 2: LEDGER LOGIC
 // ============================================================
-window.ledgerTrips = []; window.activeLedgerId = null;
+window.ledgerTrips = [];
+window.activeLedgerId = null;
+window.editingExpenseId = null;
+window.currentSettlements = [];
+window.chartInstance = null;
 
 window.fetchLedgerTrips = async function() {
-    const snapshot = await getDocs(query(collection(db, "debt_ledgers")));
-    window.ledgerTrips = []; snapshot.forEach(doc => { window.ledgerTrips.push({ id: doc.id, ...doc.data() }); });
-    const list = document.getElementById('ledgerList'); list.innerHTML = window.ledgerTrips.map(t => `<button class="w-full bg-white p-4 rounded-xl border border-outline-variant/20 flex justify-between items-center" onclick="window.openLedger('${t.id}')"><span class="font-bold text-primary">${window.sanitizeText(t.name)}</span><span class="text-[9px] uppercase font-bold text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">${t.users.length} Pax</span></button>`).join('');
-    document.getElementById('ledgerLoadingMsg').classList.add('hidden');
+    const listEl = document.getElementById('ledgerList'); const msgEl = document.getElementById('ledgerLoadingMsg');
+    msgEl.classList.remove('hidden'); listEl.innerHTML = '';
+    try {
+        const q = query(collection(db, "debt_ledgers")); const snapshot = await getDocs(q); window.ledgerTrips = [];
+        snapshot.forEach(doc => { window.ledgerTrips.push({ id: doc.id, ...doc.data() }); });
+        msgEl.classList.add('hidden');
+        if (window.ledgerTrips.length === 0) { listEl.innerHTML = '<div class="p-4 text-center text-on-surface-variant font-label text-sm border border-dashed border-outline-variant/40 rounded-xl">No ledgers yet</div>'; return; }
+        
+        window.ledgerTrips.reverse().forEach(trip => {
+            listEl.innerHTML += `<button class="w-full bg-white hover:bg-surface-container-low transition-colors p-4 rounded-xl shadow-sm border border-outline-variant/20 flex items-center justify-between" onclick="window.openLedger('${trip.id}')">
+                <span class="font-headline font-bold text-primary flex items-center gap-2"><i data-lucide="book-open" style="width:18px;"></i> ${window.sanitizeText(trip.name)}</span>
+                <span class="text-xs font-label text-on-surface-variant bg-surface-container p-1 px-2 rounded">${(trip.users||[]).length} Pax</span>
+            </button>`;
+        });
+        lucide.createIcons({ nodes: [listEl] });
+    } catch(err) { msgEl.innerHTML = '<span class="text-error">Connection failed.</span>'; }
+}
+
+window.createLedger = async function(e) {
+    e.preventDefault();
+    const rawName = document.getElementById('ledgerName').value.trim(); const currency = document.getElementById('ledgerCurrency').value;
+    const newDocRef = doc(collection(db, "debt_ledgers"));
+    const newTrip = { id: newDocRef.id, name: rawName.charAt(0).toUpperCase() + rawName.slice(1), currency: currency, users: [], expenses: [] };
+    window.ledgerTrips.push(newTrip); document.getElementById('ledgerName').value = '';
+    window.openLedger(newTrip.id); await setDoc(newDocRef, newTrip);
+}
+
+window.switchLedgerTab = function(tabId) {
+    ['dash', 'party', 'ledger', 'settle'].forEach(id => {
+        const btn = document.getElementById(`tabbtn-${id}`); const sec = document.getElementById(`tab-${id}`);
+        if(id === tabId) { btn.classList.add('text-primary', 'border-primary', 'border-b-2'); btn.classList.remove('text-on-surface-variant'); sec.classList.remove('hidden'); }
+        else { btn.classList.remove('text-primary', 'border-primary', 'border-b-2'); btn.classList.add('text-on-surface-variant'); sec.classList.add('hidden'); }
+    });
 }
 
 window.openLedger = function(id) {
-    window.activeLedgerId = id; window.hideOverlay();
+    window.activeLedgerId = id;
+    const url = new URL(window.location); url.searchParams.set('ledger', id); url.searchParams.delete('planner'); window.history.pushState({}, '', url);
+    window.hideOverlay();
     setTimeout(() => {
         document.getElementById('app-header').classList.remove('hidden');
         document.getElementById('ledger-view').classList.remove('hidden');
-        window.renderLedgerDetails();
+        window.switchLedgerTab('dash'); window.cancelEdit(); window.renderLedgerDetails();
     }, 1000);
 }
 
-window.renderLedgerDetails = function() {
-    const trip = window.ledgerTrips.find(t => t.id === window.activeLedgerId);
-    document.getElementById('app-header-left').innerHTML = `<h1 class="font-serif italic text-2xl text-primary">${window.sanitizeText(trip.name)}</h1>`;
-    document.getElementById('app-header-right').innerHTML = `<button onclick="window.copyLedgerLink()" class="p-2"><i data-lucide="share" style="width:20px;"></i></button><button onclick="window.deleteLedger()" class="p-2 text-error"><i data-lucide="trash-2" style="width:20px;"></i></button>`;
-    lucide.createIcons({ nodes: [document.getElementById('app-header')] });
-    // Keep original ledger logic intact...
+window.getActiveLedger = function() { return window.ledgerTrips.find(t => t.id === window.activeLedgerId); }
+window.saveLedgerData = async function(tripToSave) {
+    if (!tripToSave) return; window.showSaveIndicator('saving');
+    try { await setDoc(doc(db, "debt_ledgers", tripToSave.id), tripToSave); window.showSaveIndicator('saved'); } catch (e) { window.showSaveIndicator('error'); }
 }
 
-signInAnonymously(auth);
-onAuthStateChanged(auth, u => { if(u) { window.fetchPlannerTrips(); window.fetchLedgerTrips(); } });
+// Ledger Header & Actions
+window.setupLedgerHeader = function(trip) {
+    document.getElementById('app-header-left').innerHTML = `<h1 class="text-2xl font-headline italic font-bold text-primary tracking-tight">${window.sanitizeText(trip.name)}</h1>`;
+    document.getElementById('app-header-right').innerHTML = `
+        <button onclick="window.copyLedgerLink()" class="text-on-surface-variant hover:text-primary transition-colors"><i data-lucide="share" style="width:20px;"></i></button>
+        <button onclick="window.deleteLedger()" class="text-on-surface-variant hover:text-error transition-colors"><i data-lucide="trash-2" style="width:20px;"></i></button>
+    `;
+    lucide.createIcons({ nodes: [document.getElementById('app-header')] });
+}
+
+window.deleteLedger = async function() {
+    if (!confirm("Delete this ledger forever?")) return;
+    const tripId = window.activeLedgerId; window.ledgerTrips = window.ledgerTrips.filter(t => t.id !== window.activeLedgerId); window.softReset();
+    try { await deleteDoc(doc(db, "debt_ledgers", tripId)); } catch(e) {}
+}
+window.copyLedgerLink = function() {
+    const url = new URL(window.location.href); url.searchParams.set('ledger', window.activeLedgerId); url.searchParams.delete('planner');
+    navigator.clipboard.writeText(url.href).then(() => { window.showToast('Ledger Link Copied!', 'success'); });
+}
+
+// User Logic
+window.addUser = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('userName').value.trim(); const trip = window.getActiveLedger();
+    if (name && !trip.users.includes(name)) { trip.users.push(name); window.renderLedgerDetails(); document.getElementById('userName').value = ''; window.saveLedgerData(trip); }
+}
+window.deleteUser = function(userName) {
+    const trip = window.getActiveLedger();
+    if (trip.expenses.some(exp => exp.payer === userName || (exp.involvedUsers && exp.involvedUsers.includes(userName)))) return window.showToast(`${window.sanitizeText(userName)} is tied to expenses.`, 'error');
+    trip.users = trip.users.filter(u => u !== userName); window.renderLedgerDetails(); window.saveLedgerData(trip);
+}
+
+// Expense Logic
+window.saveExpense = function(e) {
+    e.preventDefault();
+    const trip = window.getActiveLedger();
+    if (trip.users.length === 0) return window.showToast("Add people in the Party tab first!", 'error');
+    const involvedUsers = Array.from(document.querySelectorAll('input[name="involved"]:checked')).map(cb => cb.value);
+    if(involvedUsers.length === 0) return window.showToast("Select who splits it.", 'error');
+
+    const category = document.getElementById('expenseCategory').value; const rawDesc = document.getElementById('expenseDesc').value.trim();
+    const expenseData = {
+        id: window.editingExpenseId || 'EXP_' + Date.now(),
+        desc: `[${category}] ${rawDesc}`, amount: parseFloat(document.getElementById('expenseAmount').value),
+        payer: document.getElementById('expensePayer').value, involvedUsers: involvedUsers
+    };
+
+    if (window.editingExpenseId) { const index = trip.expenses.findIndex(e => e.id === window.editingExpenseId); trip.expenses[index] = expenseData; } 
+    else { trip.expenses.push(expenseData); }
+
+    window.cancelEdit(); window.renderLedgerDetails(); e.target.reset(); window.saveLedgerData(trip); window.showToast('Logged', 'success');
+}
+
+window.deleteExpense = function(expenseId) {
+    if(!confirm("Delete expense?")) return;
+    const trip = window.getActiveLedger(); trip.expenses = trip.expenses.filter(e => e.id !== expenseId); window.renderLedgerDetails(); window.saveLedgerData(trip);
+}
+
+window.editExpense = function(expenseId) {
+    const trip = window.getActiveLedger(); const exp = trip.expenses.find(e => e.id === expenseId); if(!exp) return;
+    window.editingExpenseId = expenseId;
+    const match = exp.desc.match(/^\[(.*?)\] (.*)$/);
+    if (match) { document.getElementById('expenseCategory').value = match[1]; document.getElementById('expenseDesc').value = match[2]; } else { document.getElementById('expenseCategory').value = "Other"; document.getElementById('expenseDesc').value = exp.desc; }
+    document.getElementById('expenseAmount').value = exp.amount; document.getElementById('expensePayer').value = exp.payer;
+    document.querySelectorAll('input[name="involved"]').forEach(cb => { cb.checked = exp.involvedUsers.includes(cb.value); });
+    document.getElementById('expenseFormTitle').textContent = "Edit Expense"; document.getElementById('submitExpenseBtn').textContent = "Update"; document.getElementById('cancelEditBtn').style.display = "block";
+    window.scrollTo({ top: document.getElementById('expenseFormTitle').offsetTop - 100, behavior: 'smooth' });
+}
+window.cancelEdit = function() {
+    window.editingExpenseId = null; document.getElementById('addExpenseForm').reset();
+    document.getElementById('expenseFormTitle').textContent = "Add Expense"; document.getElementById('submitExpenseBtn').textContent = "Save"; document.getElementById('cancelEditBtn').style.display = "none";
+    document.querySelectorAll('input[name="involved"]').forEach(cb => cb.checked = true);
+}
+
+window.executeSettlement = function(fromUser, toUser, amount) {
+    const trip = window.getActiveLedger(); const curr = trip.currency || '';
+    if(!confirm(`Record ${window.sanitizeText(fromUser)} paying ${curr}${amount.toFixed(2)} to ${window.sanitizeText(toUser)}?`)) return;
+    trip.expenses.push({ id: 'SETTLE_' + Date.now(), desc: `[Settlement] Paid to ${toUser}`, amount: parseFloat(amount), payer: fromUser, involvedUsers: [toUser] });
+    window.renderLedgerDetails(); window.saveLedgerData(trip);
+}
+window.copySettlements = function() {
+    const trip = window.getActiveLedger(); const curr = trip.currency || ''; if(!trip || window.currentSettlements.length === 0) return;
+    let text = `${trip.name} Settlements\n------------------------\n`;
+    window.currentSettlements.forEach(s => { text += `💸 ${s.from} needs to pay ${curr}${s.amount.toFixed(2)} to ${s.to}\n`; });
+    navigator.clipboard.writeText(text).then(() => { window.showToast('Copied!', 'success'); });
+}
+
+window.renderDebtChart = function(trip) {
+    const ctx = document.getElementById('debtChart').getContext('2d'); const curr = trip.currency || ''; 
+    if (window.chartInstance) window.chartInstance.destroy();
+    
+    if (trip.expenses.length === 0) {
+        window.chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['Start'], datasets: [{ data: [0], borderColor: '#b2b2ab' }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } } });
+        document.getElementById('chartWrapper').classList.remove('vibrating-chart'); return;
+    }
+    let chartLabels = ['Start']; let chartData = [0]; let runningBalances = {}; trip.users.forEach(u => runningBalances[u] = 0);
+    trip.expenses.forEach(exp => {
+        const involved = exp.involvedUsers || trip.users; const amt = parseFloat(exp.amount) || 0; 
+        if (involved.length > 0) {
+            const split = amt / involved.length; runningBalances[exp.payer] = (runningBalances[exp.payer] || 0) + amt;
+            involved.forEach(u => { runningBalances[u] = (runningBalances[u] || 0) - split; });
+        }
+        let currentDebt = 0; for (let user in runningBalances) if (runningBalances[user] > 0.01) currentDebt += runningBalances[user];
+        chartData.push(currentDebt);
+        const match = exp.desc.match(/^\[.*?\] (.*)$/); let labelName = match ? match[1] : exp.desc;
+        if(labelName && labelName.length > 12) labelName = labelName.substring(0, 12) + '...'; chartLabels.push(labelName || 'Expense');
+    });
+
+    const latestDebt = chartData[chartData.length - 1]; const cw = document.getElementById('chartWrapper');
+    if (latestDebt > 5) { cw.classList.add('vibrating-chart'); cw.style.setProperty('--shake-intensity', `${Math.min(latestDebt/40, 4).toFixed(1)}px`); cw.style.animationDuration = `${Math.max(0.08, 0.3 - (latestDebt/1000))}s`; } 
+    else { cw.classList.remove('vibrating-chart'); }
+
+    window.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: chartLabels.map(window.sanitizeText), datasets: [{ data: chartData, borderColor: '#256296', backgroundColor: 'rgba(37, 98, 150, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: '#256296' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => curr + c.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#5e605a', callback: v => curr + v } }, x: { grid: { display: false }, ticks: { color: '#5e605a' } } } }
+    });
+}
+
+window.renderLedgerDetails = function() {
+    const trip = window.getActiveLedger(); if (!trip) return;
+    const curr = trip.currency || ''; window.setupLedgerHeader(trip);
+
+    const userList = document.getElementById('userList'); const expPayer = document.getElementById('expensePayer'); const invCont = document.getElementById('involvedUsersContainer'); const expLog = document.getElementById('expenseLogList');
+    userList.innerHTML = ''; expPayer.innerHTML = '<option value="" disabled selected>-- Select Payer --</option>'; invCont.innerHTML = ''; expLog.innerHTML = '';
+    
+    if(trip.users.length === 0) userList.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">Empty party.</div>';
+
+    trip.users.forEach(user => {
+        userList.innerHTML += `<li class="flex items-center justify-between p-3 bg-white border border-outline-variant/20 rounded-lg shadow-sm"><span class="font-bold">${window.sanitizeText(user)}</span><button class="text-outline-variant hover:text-error" onclick="window.deleteUser('${window.sanitizeText(user).replace(/'/g, "\\'")}')"><i data-lucide="x" style="width:16px;"></i></button></li>`;
+        expPayer.innerHTML += `<option value="${window.sanitizeText(user)}">${window.sanitizeText(user)}</option>`;
+        invCont.innerHTML += `<label class="flex items-center gap-2 font-bold text-sm cursor-pointer"><input type="checkbox" name="involved" value="${window.sanitizeText(user)}" class="rounded text-primary focus:ring-primary" checked> ${window.sanitizeText(user)}</label>`;
+    });
+
+    document.getElementById('expenseAmount').placeholder = `Amount (${curr})`;
+
+    let categoryTotals = {}; let individualShare = {}; let totalCost = 0; let balances = {};
+    trip.users.forEach(u => { individualShare[u] = 0; balances[u] = 0; });
+
+    if (trip.expenses.length === 0) expLog.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">No expenses yet.</div>';
+
+    trip.expenses.forEach(exp => {
+        const involved = exp.involvedUsers || trip.users; const involvedCount = involved.length;
+        let displayDesc = window.sanitizeText(exp.desc); let categoryName = "Other";
+        const match = exp.desc.match(/^\[(.*?)\] (.*)$/);
+        if (match) { 
+            categoryName = match[1]; const isSettle = categoryName === 'Settlement';
+            displayDesc = `<span class="block text-[10px] font-bold uppercase tracking-widest ${isSettle ? 'text-success' : 'text-primary'}">${window.sanitizeText(match[1])}</span><span class="font-bold text-lg leading-tight ${isSettle ? 'text-success' : 'text-on-surface'}">${window.sanitizeText(match[2])}</span>`; 
+        }
+
+        expLog.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20">
+            <div class="flex justify-between mb-3">
+                <div>${displayDesc}<p class="text-xs text-on-surface-variant mt-1">Paid by ${window.sanitizeText(exp.payer)}</p></div>
+                <div class="text-right"><span class="font-serif text-xl font-bold text-primary">${curr}${exp.amount.toFixed(2)}</span></div>
+            </div>
+            <div class="flex gap-2 border-t border-outline-variant/20 pt-2"><button class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors flex-1 text-center py-1" onclick="window.editExpense('${exp.id}')">Edit</button><button class="text-xs font-bold text-on-surface-variant hover:text-error transition-colors flex-1 text-center py-1" onclick="window.deleteExpense('${exp.id}')">Delete</button></div>
+        </li>`;
+
+        if (categoryName !== 'Settlement') { totalCost += parseFloat(exp.amount) || 0; categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + (parseFloat(exp.amount) || 0); }
+        if(involvedCount > 0) {
+            const split = (parseFloat(exp.amount) || 0) / involvedCount; balances[exp.payer] += (parseFloat(exp.amount) || 0);
+            involved.forEach(u => { balances[u] -= split; if (categoryName !== 'Settlement') individualShare[u] += split; });
+        }
+    });
+    lucide.createIcons({ nodes: [expLog, userList] });
+    window.renderDebtChart(trip);
+
+    document.getElementById('totalSpentDisplay').textContent = `${curr}${totalCost.toFixed(2)}`;
+    const catSum = document.getElementById('categorySummary'); const perSum = document.getElementById('personSummary'); catSum.innerHTML = ''; perSum.innerHTML = '';
+    
+    if (totalCost === 0) { catSum.innerHTML = '<p class="text-sm text-on-surface-variant">Nothing spent.</p>'; perSum.innerHTML = '<p class="text-sm text-on-surface-variant">Nothing spent.</p>'; } 
+    else {
+        const colors = ['bg-primary', 'bg-tertiary', 'bg-secondary', 'bg-primary-dim'];
+        Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).forEach(([cat, amt], idx) => {
+            const colorClass = colors[idx % colors.length];
+            catSum.innerHTML += `<div class="space-y-1"><div class="flex justify-between text-sm font-label font-bold"><span>${window.sanitizeText(cat)}</span><span>${curr}${amt.toFixed(2)}</span></div><div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / totalCost) * 100}%"></div></div></div>`;
+        });
+        const sortedPersons = Object.entries(individualShare).sort((a, b) => b[1] - a[1]); const maxShare = sortedPersons.length > 0 ? sortedPersons[0][1] : 1; 
+        sortedPersons.forEach(([person, amt], idx) => {
+            const colorClass = colors[idx % colors.length];
+            perSum.innerHTML += `<div class="bg-white p-4 rounded-xl flex items-center gap-4 shadow-sm border-l-4 ${colorClass.replace('bg-', 'border-')}"><div class="flex-1 space-y-1"><div class="flex justify-between text-xs font-label font-bold"><span>${window.sanitizeText(person)}</span><span>${curr}${amt.toFixed(2)}</span></div><div class="h-1.5 w-full bg-surface-container-low rounded-full"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / maxShare) * 100}%"></div></div></div></div>`;
+        });
+    }
+
+    let debtors = []; let creditors = [];
+    for (const [user, balance] of Object.entries(balances)) { if (balance < -0.01) debtors.push({ user, amount: Math.abs(balance) }); else if (balance > 0.01) creditors.push({ user, amount: balance }); }
+    debtors.sort((a, b) => b.amount - a.amount); creditors.sort((a, b) => b.amount - a.amount);
+
+    window.currentSettlements = []; let i = 0; let j = 0;
+    while (i < debtors.length && j < creditors.length) {
+        let debtor = debtors[i]; let creditor = creditors[j]; let minAmount = Math.min(debtor.amount, creditor.amount);
+        window.currentSettlements.push({ from: debtor.user, to: creditor.user, amount: minAmount });
+        debtor.amount -= minAmount; creditor.amount -= minAmount;
+        if (Math.abs(debtor.amount) < 0.01) i++; if (Math.abs(creditor.amount) < 0.01) j++;
+    }
+
+    const setList = document.getElementById('settlementList'); setList.innerHTML = '';
+    document.getElementById('copySettlementsBtn').style.display = 'none';
+    if (window.currentSettlements.length === 0) {
+        if (trip.expenses.length > 0) setList.innerHTML = '<div class="p-4 border border-success bg-success/10 rounded-xl text-center text-sm font-label text-success font-bold">All settled up!</div>';
+        else setList.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">Add expenses first.</div>';
+    } else {
+        window.currentSettlements.forEach(s => {
+            setList.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-bold text-sm text-error">${window.sanitizeText(s.from)} <span class="text-on-surface-variant font-normal px-1">→</span> <span class="text-success">${window.sanitizeText(s.to)}</span></span>
+                    <span class="font-serif font-bold text-lg bg-surface-container-low px-2 rounded">${curr}${s.amount.toFixed(2)}</span>
+                </div>
+                <button class="w-full bg-success/10 text-success font-bold text-sm py-2 rounded-lg hover:bg-success hover:text-white transition-colors" onclick="window.executeSettlement('${window.sanitizeText(s.from).replace(/'/g, "\\'")}', '${window.sanitizeText(s.to).replace(/'/g, "\\'")}', ${s.amount})">Mark as Paid</button>
+            </li>`;
+        });
+        document.getElementById('copySettlementsBtn').style.display = 'flex'; 
+    }
+}
 </script>
 </body>
 </html>
