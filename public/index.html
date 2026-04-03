@@ -50,6 +50,21 @@
         h1, h2, h3, .serif { font-family: 'Cinzel', serif; color: var(--text-title); }
         .sans { font-family: 'DM Sans', sans-serif; }
 
+        /* Editable Fields Styling */
+        [contenteditable="true"] {
+            transition: background-color 0.2s, box-shadow 0.2s;
+            cursor: text;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
+        [contenteditable="true"]:hover { background-color: rgba(255,255,255,0.05); }
+        [contenteditable="true"]:focus {
+            outline: none;
+            background-color: rgba(0,0,0,0.6);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
         /* ---- TOAST ---- */
         #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
         .toast { padding: 10px 20px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: auto; animation: toastIn 0.3s ease forwards; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border); }
@@ -178,7 +193,7 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 15px rgba(122, 184, 208, 0.05);
             backdrop-filter: blur(8px);
         }
-        .sign-btn::after { /* Mystical glowing rivet */
+        .sign-btn::after { 
             content: ''; position: absolute; width: 8px; height: 8px; 
             background: #a8c4d8; border-radius: 50%; top: 50%; transform: translateY(-50%); 
             box-shadow: 0 0 10px #7ab8d0, inset 1px 1px 2px rgba(255,255,255,0.8);
@@ -414,6 +429,7 @@
             
             <div class="ledger-tabs" style="margin-bottom: 24px;">
                 <button class="tab-btn active" id="ptab-load" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
+                <button class="tab-btn" id="ptab-new" onclick="window.switchPortalTab('planner', 'new')">Start New</button>
             </div>
 
             <div id="planner-sec-load" class="tab-content active">
@@ -427,6 +443,15 @@
                     </button>
                 </div>
                 <div id="trips-status" style="margin-top:6px;"></div>
+            </div>
+
+            <div id="planner-sec-new" class="tab-content">
+                <p class="field-label">Start New Journey</p>
+                <form id="newPlannerForm" onsubmit="window.createPlannerTrip(event)">
+                    <input type="text" id="newTripTitle" placeholder="Journey Name (e.g., Hong Kong, Macau & Guangzhou)" required autocomplete="off" class="field-input">
+                    <input type="text" id="newTripDates" placeholder="Period (e.g., Dec 20 - Dec 26)" required autocomplete="off" class="field-input">
+                    <button type="submit" class="btn-primary" style="margin-bottom:0;">Scribe New Grimoire</button>
+                </form>
             </div>
         </div>
 
@@ -477,7 +502,7 @@
     <div class="header-inner">
         <div class="header-top">
             <div>
-                <div class="header-title" id="header-title"></div>
+                <div class="header-title" id="header-title" contenteditable="true" onblur="window.updatePlannerTitle(this.innerText)"></div>
                 <div class="header-meta" id="header-meta"></div>
             </div>
             <div class="header-actions">
@@ -622,16 +647,44 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-// --- ADD THIS BLOCK HERE ---
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider('6LdjNqEsAAAAAEI2m37oYKa3iluG5Mbx_Ge3VImh'),
   isTokenAutoRefreshEnabled: true
 });
-// ---------------------------
     
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// DEFAULT SEED DATA
+const eastAsiaDefaultData = {
+    overview: { title: "East Asia Spring Escape", dates: "April 14 - April 24, 2026", pax: "2" },
+    budget: [
+        { item: "Flights (SG <> JP/KR + Inter-city)", amount: 1098, icon: "plane-takeoff" },
+        { item: "Tokyo: Dai-ichi Hotel (5 Nights)", amount: 1055, icon: "bed-double" },
+        { item: "Jeju: Airbnb (3 Nights)", amount: 482, icon: "palmtree" },
+        { item: "Seoul: Mercure Hongdae (2 Nights)", amount: 281, icon: "bed-double" }
+    ],
+    locations: [
+        { id: 'tokyo', name: 'Tokyo', color: 'pink', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1000&q=80' },
+        { id: 'jeju', name: 'Jeju Island', color: 'orange', image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=1000&q=80' },
+        { id: 'seoul', name: 'Seoul', color: 'purple', image: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1000&q=80' }
+    ],
+    itinerary: [
+        {
+            day: 1, date: "Apr 14 (Tue)", location: "tokyo", title: "Arrival in Japan",
+            events: [
+                { time: "1:55 PM", desc: "Depart Singapore <span class=\"block text-sm font-normal text-slate-500 mt-1\">Ensure you have your Visit Japan Web QR codes ready for swift immigration.</span>", icon: "plane-takeoff", expense: 0 },
+                { time: "9:55 PM", desc: "Arrive at Tokyo Haneda Airport <span class=\"block text-sm font-normal text-slate-500 mt-1\">Navigate to the Tokyo Monorail or Keikyu Line for transit into the city.</span>", icon: "plane-landing", link: "https://www.google.com/maps/search/?api=1&query=Haneda+Airport", latlng: [35.5494, 139.7798], expense: 0 }
+            ]
+        },
+        {
+            day: 2, date: "Apr 15 (Wed)", location: "tokyo", title: "Coffee & Ginza",
+            events: [
+                { time: "11:00 AM", desc: "Coffee Omakase @ Koffee Mameya Kakeru", icon: "coffee", latlng: [35.6615, 139.7106], expense: 0 }
+            ]
+        }
+    ]
+};
 
 // ============================================================
 //  SHARED STATE & UTILS
@@ -663,7 +716,7 @@ window.showSaveIndicator = function(state = 'saving') {
 
 window.sanitizeText = function(str) {
     if (!str) return '';
-    return DOMPurify.sanitize(String(str), { ALLOWED_TAGS: [] }); // Strip all tags for simple text
+    return DOMPurify.sanitize(String(str), { ALLOWED_TAGS: [] }); 
 }
 
 window.sanitizeURL = function(url) {
@@ -695,13 +748,6 @@ window.switchPortalTab = function(portalType, section) {
     safeRemove(`${sfix}-load`);
     safeRemove(`${sfix}-new`);
     safeAdd(`${sfix}-${section}`);
-}
-
-function parseJSON(text) {
-  try { return JSON.parse(text); } catch(e) {}
-  const clean = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
-  try { return JSON.parse(clean); } catch(e) {}
-  return null;
 }
 
 // ============================================================
@@ -769,27 +815,26 @@ signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
 
 onAuthStateChanged(auth, user => {
     if (user) {
-        // Once Auth is ready, pre-fetch lists from Firestore securely
-        window.fetchPlannerTrips();
-        window.fetchLedgerTrips().then(() => {
-            // Check for Deep Links after data is fetched
-            const params = new URLSearchParams(window.location.search);
-            const pTrip = params.get('planner');
-            const lTrip = params.get('ledger');
+        window.fetchPlannerTrips().then(() => {
+            window.fetchLedgerTrips().then(() => {
+                const params = new URLSearchParams(window.location.search);
+                const pTrip = params.get('planner');
+                const lTrip = params.get('ledger');
 
-            if (pTrip) {
-                document.getElementById('landing-paths-container').style.display = 'none';
-                document.getElementById('planner-portal').style.display = 'block';
-                window.loadPastTrip(pTrip); 
-            } else if (lTrip) {
-                document.getElementById('landing-paths-container').style.display = 'none';
-                document.getElementById('ledger-portal').style.display = 'block';
-                if(window.ledgerTrips.some(t => t.id === lTrip)) {
-                    window.openLedger(lTrip);
-                } else {
-                    window.showToast("Ledger not found.", "error");
+                if (pTrip) {
+                    document.getElementById('landing-paths-container').style.display = 'none';
+                    document.getElementById('planner-portal').style.display = 'block';
+                    window.loadPastTrip(pTrip); 
+                } else if (lTrip) {
+                    document.getElementById('landing-paths-container').style.display = 'none';
+                    document.getElementById('ledger-portal').style.display = 'block';
+                    if(window.ledgerTrips.some(t => t.id === lTrip)) {
+                        window.openLedger(lTrip);
+                    } else {
+                        window.showToast("Ledger not found.", "error");
+                    }
                 }
-            }
+            });
         });
     }
 });
@@ -825,14 +870,59 @@ window.fetchPlannerTrips = async function() {
         const trips = [];
         snapshot.forEach(doc => { trips.push({ id: doc.id, ...doc.data() }); });
         
-        if (trips.length > 0) {
-            dropdown.innerHTML = trips.map(t => `<option value="${t.id}">${window.sanitizeText(t.overview?.title || 'Unknown')}</option>`).join('');
-            dropdown.disabled = false; document.getElementById('load-btn').disabled = false;
-        } else { dropdown.innerHTML = '<option value="">No past memories found</option>'; }
+        // Seed default trip if completely empty
+        if (trips.length === 0) {
+            const newDocRef = doc(collection(db, "planner_trips"));
+            const seededTrip = { ...eastAsiaDefaultData, id: newDocRef.id };
+            await setDoc(newDocRef, seededTrip);
+            trips.push(seededTrip);
+        }
+
+        dropdown.innerHTML = trips.map(t => `<option value="${t.id}">${window.sanitizeText(t.overview?.title || 'Unknown')}</option>`).join('');
+        dropdown.disabled = false; document.getElementById('load-btn').disabled = false;
+        
     } catch (err) {
         console.error("Fetch Planner Error:", err);
         dropdown.innerHTML = '<option value="">Could not consult records</option>';
     }
+}
+
+window.createPlannerTrip = async function(e) {
+    e.preventDefault();
+    const title = document.getElementById('newTripTitle').value.trim();
+    const dates = document.getElementById('newTripDates').value.trim();
+    
+    window.showLoading('Scribing your new grimoire...');
+    
+    try {
+        const newDocRef = doc(collection(db, "planner_trips"));
+        const newTrip = {
+            id: newDocRef.id,
+            overview: { title: title, dates: dates, pax: "1" },
+            budget: [
+                { item: "Flights", amount: 0, icon: "plane" },
+                { item: "Accommodation", amount: 0, icon: "bed" }
+            ],
+            locations: [
+                { id: 'loc1', name: 'Main Location', color: 'teal', image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1000&q=80' }
+            ],
+            itinerary: [
+                {
+                    day: 1, date: "Day 1", location: "loc1", title: "Arrival",
+                    events: [{ time: "12:00 PM", desc: "Touchdown", expense: 0, icon: "plane-landing" }]
+                }
+            ]
+        };
+        await setDoc(newDocRef, newTrip);
+        
+        document.getElementById('newTripTitle').value = '';
+        document.getElementById('newTripDates').value = '';
+        
+        // Reload list and select new trip
+        await window.fetchPlannerTrips();
+        window.loadPastTrip(newDocRef.id);
+
+    } catch (err) { window.showToast('Failed to create journey.', 'error'); console.error(err); }
 }
 
 window.loadPastTrip = async function(forcedId = null) {
@@ -889,10 +979,46 @@ window.schedulePlannerSave = function() {
     }, 1200);
 }
 
+// INLINE EDITING FUNCTIONS
+window.updatePlannerTitle = function(val) { window.tripData.overview.title = val; window.schedulePlannerSave(); }
+window.updatePlannerDates = function(val) { window.tripData.overview.dates = val; window.schedulePlannerSave(); }
+window.updateDayDate = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).date = val; window.schedulePlannerSave(); }
+window.updateDayTitle = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).title = val; window.schedulePlannerSave(); }
+window.updateEventTime = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].time = val; window.schedulePlannerSave(); }
+window.updateEventDesc = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].desc = val; window.schedulePlannerSave(); }
+
+window.addPlannerEvent = function(dayNum) {
+    const day = window.tripData.itinerary.find(d => d.day === dayNum);
+    day.events.push({ time: "12:00 PM", desc: "New Activity", expense: 0, icon: "circle" });
+    window.schedulePlannerSave();
+    window.renderPlannerContent();
+}
+
+window.deletePlannerEvent = function(dayNum, idx) {
+    if(!confirm("Delete this event?")) return;
+    window.tripData.itinerary.find(d => d.day === dayNum).events.splice(idx, 1);
+    window.schedulePlannerSave();
+    window.renderPlannerContent();
+    window.renderPlannerHeaderMeta();
+}
+
+window.addPlannerDay = function() {
+    const newDayNum = window.tripData.itinerary.length ? Math.max(...window.tripData.itinerary.map(d => d.day)) + 1 : 1;
+    window.tripData.itinerary.push({
+        day: newDayNum,
+        date: "New Date",
+        location: window.tripData.locations && window.tripData.locations.length > 0 ? window.tripData.locations[0].id : 'loc1',
+        title: "New Day",
+        events: []
+    });
+    window.schedulePlannerSave();
+    window.renderPlannerContent();
+}
+
 window.renderPlannerHeaderMeta = function() {
     const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
     document.getElementById('header-meta').innerHTML = `
-        <div class="meta-chip"><i data-lucide="calendar" style="width:13px;height:13px;"></i> ${window.sanitizeText(window.tripData.overview.dates)}</div>
+        <div class="meta-chip"><i data-lucide="calendar" style="width:13px;height:13px;"></i> <span contenteditable="true" onblur="window.updatePlannerDates(this.innerText)">${window.sanitizeText(window.tripData.overview.dates)}</span></div>
         <div class="meta-chip"><i data-lucide="users" style="width:13px;height:13px;"></i> ${window.sanitizeText(window.tripData.overview.pax || '')} pax</div>
         <div class="meta-chip"><i data-lucide="wallet" style="width:13px;height:13px;"></i> Total: $${grandTotal.toLocaleString()}</div>
     `;
@@ -918,7 +1044,8 @@ window.renderPlannerContent = function() {
     let html = '';
     if (window.activeFilter === 'all') html += window.renderBudget(); else html += window.renderHero();
     html += window.renderExpenseSummary(); html += window.renderTimeline();
-    document.getElementById('planner-content').innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'onchange', 'onclick'] });
+    // Allow contenteditable and onblur inline handlers to pass through DOMPurify safely
+    document.getElementById('planner-content').innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'onchange', 'onclick', 'onblur', 'contenteditable'] });
     lucide.createIcons({ nodes: [document.getElementById('planner-content')] });
 }
 
@@ -972,18 +1099,31 @@ window.renderHero = function() {
 
 window.renderTimeline = function() {
     const days = (window.tripData.itinerary || []).filter(d => window.activeFilter === 'all' || d.location === window.activeFilter);
-    if (!days.length) return `<div class="empty-state-main">No events found.</div>`;
+    if (!days.length) return `<div class="empty-state-main">No events found.</div><div class="divider"><span>Or</span></div><button onclick="window.addPlannerDay()" class="btn-primary" style="margin: 0 auto; max-width: 250px;"><i data-lucide="calendar-plus" style="width:16px;height:16px;"></i> Add New Day</button>`;
+    
     let html = '';
     days.forEach(day => {
         const loc = (window.tripData.locations || []).find(l => l.id === day.location); const theme = window.getTheme(loc ? loc.color : 'amber'); const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
-        html += `<div class="day-card"><div class="day-header"><div><div class="day-label" style="color:var(--text-muted);">Day ${day.day} &bull; ${window.sanitizeText(day.date)}</div><div class="day-title">${window.sanitizeText(day.title)}</div></div><div class="day-chips"><div class="day-expense-chip" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</div>${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="map-toggle"><i data-lucide="map" style="width:11px;height:11px;"></i> Map</button>` : ''}</div></div>${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}<div class="events-wrap"><div class="timeline-rail">`;
+        html += `<div class="day-card"><div class="day-header"><div><div class="day-label" style="color:var(--text-muted);">Day ${day.day} &bull; <span contenteditable="true" onblur="window.updateDayDate(${day.day}, this.innerText)">${window.sanitizeText(day.date)}</span></div><div class="day-title" contenteditable="true" onblur="window.updateDayTitle(${day.day}, this.innerText)">${window.sanitizeText(day.title)}</div></div><div class="day-chips"><div class="day-expense-chip" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</div>${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="map-toggle"><i data-lucide="map" style="width:11px;height:11px;"></i> Map</button>` : ''}</div></div>${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}<div class="events-wrap"><div class="timeline-rail">`;
         (day.events || []).forEach((event, idx) => {
             const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>` : rawDesc;
-            html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"></div></div></div>`;
+            html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time" contenteditable="true" onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name" contenteditable="true" onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"><button onclick="window.deletePlannerEvent(${day.day}, ${idx})" class="icon-btn danger" style="padding: 4px; margin-left: 4px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button></div></div></div>`;
         });
-        html += `</div></div></div>`;
+        html += `</div><button onclick="window.addPlannerEvent(${day.day})" class="btn-secondary" style="margin-top: 16px; width: auto;"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Time Slot</button></div></div>`;
     });
+    
+    html += `<div class="divider"><span>Journey Onward</span></div><button onclick="window.addPlannerDay()" class="btn-primary" style="margin: 0 auto; max-width: 250px;"><i data-lucide="calendar-plus" style="width:16px;height:16px;"></i> Add New Day</button>`;
     return html;
+}
+
+window.updatePlannerExpense = function(dayNum, idx, val) { 
+    window.tripData.itinerary.find(d => d.day === dayNum).events[idx].expense = Math.max(0, parseInt(val) || 0); 
+    window.schedulePlannerSave(); 
+    window.renderPlannerHeaderMeta(); 
+    document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); 
+    const badge = document.getElementById(`day-expense-${dayNum}`);
+    if (badge) badge.textContent = `$${window.getDayExpenses(dayNum).toLocaleString()}`;
+    lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); 
 }
 
 window.toggleMap = function(dayNum) {
