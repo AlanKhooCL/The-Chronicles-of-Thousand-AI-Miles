@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -668,17 +669,32 @@
 </div>
 
 <script type="module">
+// Import Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
 
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyB80OS8Lh0xDHhWl95PphjN1B1WiOoK33M",
+  authDomain: "ai-study-party.firebaseapp.com",
+  projectId: "ai-study-party",
+  storageBucket: "ai-study-party.firebasestorage.app",
+  messagingSenderId: "583546365173",
+  appId: "1:583546365173:web:dd2fbec4ec4d20380951bc"
+};
+
+const app = initializeApp(firebaseConfig);
+
+// --- ADD THIS BLOCK HERE ---
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider('6LdjNqEsAAAAAEI2m37oYKa3iluG5Mbx_Ge3VImh'),
   isTokenAutoRefreshEnabled: true
 });
-
+// ---------------------------
+    
 const db = getFirestore(app);
 const auth = getAuth(app);
 const functions = getFunctions(app);
