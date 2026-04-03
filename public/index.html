@@ -134,8 +134,8 @@
         .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Toasts & Loaders */
-        #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
-        .toast { padding: 12px 24px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.1); pointer-events: auto; animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e9e8e1; color: var(--on-surface); }
+        #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: 90%; max-width: 400px; }
+        .toast { padding: 12px 24px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.1); pointer-events: auto; animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e9e8e1; color: var(--on-surface); width: 100%; justify-content: center;}
         .toast.success i { color: var(--success); }
         .toast.error i { color: var(--error); }
         .toast.info i { color: var(--primary); }
@@ -176,6 +176,7 @@
         .day-map { height: 300px; width: 100%; border-radius: 12px; z-index: 1; }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         /* Modals */
         .fixed-modal { position: fixed; inset: 0; background: rgba(251,249,244,0.8); z-index: 1100; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
@@ -197,14 +198,14 @@
         <p class="font-headline italic text-2xl text-primary" id="loading-message">Consulting the archives...</p>
     </div>
 
-    <main id="crossroads-view" class="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-12 pb-24 z-10 transition-opacity duration-1000">
+    <main id="crossroads-view" class="relative min-h-screen flex flex-col items-center justify-center text-center px-4 pt-12 pb-24 z-10 transition-opacity duration-1000">
         <div class="max-w-4xl mx-auto space-y-4">
             <h2 class="text-on-surface-variant font-label text-sm uppercase tracking-[0.3em] mb-4">A Visual Itinerary Architect</h2>
             <h1 class="text-5xl md:text-7xl font-headline text-primary tracking-tight leading-none italic">
                 Journeys & Ledgers
             </h1>
             <div class="py-6 flex justify-center">
-                <svg class="text-primary-container" fill="none" height="24" viewBox="0 0 200 24" width="200" xmlns="http://www.w3.org/2000/svg">
+                <svg class="text-primary-container max-w-[80vw]" fill="none" height="24" viewBox="0 0 200 24" width="200" xmlns="http://www.w3.org/2000/svg">
                     <path d="M0 12C25 12 25 2 50 2C75 2 75 12 100 12C125 12 125 22 150 22C175 22 175 12 200 12" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
                 </svg>
             </div>
@@ -213,7 +214,7 @@
 
         <div id="landing-paths-container" class="signpost-wrapper">
             <div class="signpost-pole"></div>
-            <div class="signpost-signs">
+            <div class="signpost-signs px-4">
                 <button class="sign-btn sign-left" onclick="window.showPlannerPortal()">
                     <i data-lucide="book-open" style="width:24px; height:24px;"></i> The Planner's Grimoire
                 </button>
@@ -224,17 +225,17 @@
             <div class="w-32 h-6 bg-black/5 blur-md rounded-full mx-auto mt-4"></div>
         </div>
 
-        <div id="planner-portal" class="w-full max-w-lg mt-12 bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-8 relative hidden z-20">
+        <div id="planner-portal" class="w-full max-w-lg mt-12 bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-6 sm:p-8 relative hidden z-20 mx-4">
             <button onclick="window.backToPaths()" class="absolute top-4 left-4 text-on-surface-variant hover:text-primary flex items-center gap-1 font-label text-sm font-bold"><i data-lucide="arrow-left" style="width:16px;"></i> Back</button>
-            <h3 class="font-headline italic text-3xl text-primary mb-6 text-center mt-4">The Planner</h3>
-            <div class="flex justify-center mb-6 bg-surface-container-low p-1.5 rounded-full w-fit mx-auto border border-outline-variant/30">
-                <button id="ptab-load" class="px-6 py-2 rounded-full font-label font-bold text-sm bg-primary text-white shadow-sm" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
-                <button id="ptab-new" class="px-6 py-2 rounded-full font-label font-bold text-sm text-on-surface-variant hover:bg-surface-container-high" onclick="window.switchPortalTab('planner', 'new')">Start New</button>
+            <h3 class="font-headline italic text-3xl text-primary mb-6 text-center mt-6 sm:mt-4">The Planner</h3>
+            <div class="flex flex-wrap justify-center mb-6 bg-surface-container-low p-1.5 rounded-full w-fit mx-auto border border-outline-variant/30 gap-1">
+                <button id="ptab-load" class="px-4 sm:px-6 py-2 rounded-full font-label font-bold text-sm bg-primary text-white shadow-sm" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
+                <button id="ptab-new" class="px-4 sm:px-6 py-2 rounded-full font-label font-bold text-sm text-on-surface-variant hover:bg-surface-container-high" onclick="window.switchPortalTab('planner', 'new')">Start New</button>
             </div>
             
             <div id="planner-sec-load" class="space-y-4">
                 <label class="block font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant pl-1 text-left">Select Archive</label>
-                <select id="saved-trips-dropdown" class="select-input bg-surface-container-high border-none rounded-xl h-14 px-4 font-headline text-lg" disabled>
+                <select id="saved-trips-dropdown" class="select-input bg-surface-container-high border-none rounded-xl h-14 px-4 font-headline text-lg truncate" disabled>
                     <option value="">Fetching archives...</option>
                 </select>
                 <button id="load-btn" onclick="window.loadPastTrip()" class="btn-primary w-full h-14 text-lg" disabled>OPEN</button>
@@ -250,12 +251,12 @@
             </div>
         </div>
 
-        <div id="ledger-portal" class="w-full max-w-lg mt-12 bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-8 relative hidden z-20">
+        <div id="ledger-portal" class="w-full max-w-lg mt-12 bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-6 sm:p-8 relative hidden z-20 mx-4">
             <button onclick="window.backToPaths()" class="absolute top-4 left-4 text-on-surface-variant hover:text-primary flex items-center gap-1 font-label text-sm font-bold"><i data-lucide="arrow-left" style="width:16px;"></i> Back</button>
-            <h3 class="font-headline italic text-3xl text-primary mb-6 text-center mt-4">The Ledger</h3>
-            <div class="flex justify-center mb-6 bg-surface-container-low p-1.5 rounded-full w-fit mx-auto border border-outline-variant/30">
-                <button id="ltab-load" class="px-6 py-2 rounded-full font-label font-bold text-sm bg-primary text-white shadow-sm" onclick="window.switchPortalTab('ledger', 'load')">Open Ledger</button>
-                <button id="ltab-new" class="px-6 py-2 rounded-full font-label font-bold text-sm text-on-surface-variant hover:bg-surface-container-high" onclick="window.switchPortalTab('ledger', 'new')">Start New</button>
+            <h3 class="font-headline italic text-3xl text-primary mb-6 text-center mt-6 sm:mt-4">The Ledger</h3>
+            <div class="flex flex-wrap justify-center mb-6 bg-surface-container-low p-1.5 rounded-full w-fit mx-auto border border-outline-variant/30 gap-1">
+                <button id="ltab-load" class="px-4 sm:px-6 py-2 rounded-full font-label font-bold text-sm bg-primary text-white shadow-sm" onclick="window.switchPortalTab('ledger', 'load')">Open Ledger</button>
+                <button id="ltab-new" class="px-4 sm:px-6 py-2 rounded-full font-label font-bold text-sm text-on-surface-variant hover:bg-surface-container-high" onclick="window.switchPortalTab('ledger', 'new')">Start New</button>
             </div>
             
             <div id="ledger-sec-load">
@@ -267,7 +268,7 @@
                 <form id="newLedgerForm" onsubmit="window.createLedger(event)" class="space-y-4">
                     <input type="text" id="ledgerName" placeholder="Trip Name (e.g., Tokyo Split)" required class="field-input bg-surface-container-high border-none rounded-xl h-14 px-4">
                     <div class="flex gap-2">
-                        <select id="ledgerCurrency" class="select-input bg-surface-container-high border-none rounded-xl h-14 px-4 w-1/3" required>
+                        <select id="ledgerCurrency" class="select-input bg-surface-container-high border-none rounded-xl h-14 px-4 w-[100px] sm:w-1/3 shrink-0" required>
                             <option value="$">USD ($)</option>
                             <option value="S$">SGD (S$)</option>
                             <option value="¥">JPY (¥)</option>
@@ -284,40 +285,40 @@
         </div>
     </main>
 
-    <header id="app-header" class="hidden fixed top-0 left-0 right-0 h-20 px-6 md:px-12 z-40 flex justify-between items-center bg-[#fbf9f4]/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(49,51,46,0.05)]">
-        <div class="flex items-center gap-4">
-            <button onclick="window.softReset()" class="text-on-surface-variant hover:text-primary transition-colors flex items-center">
+    <header id="app-header" class="hidden fixed top-0 left-0 right-0 h-20 px-4 md:px-12 z-40 flex justify-between items-center bg-[#fbf9f4]/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(49,51,46,0.05)]">
+        <div class="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <button onclick="window.softReset()" class="text-on-surface-variant hover:text-primary transition-colors flex items-center shrink-0">
                 <i data-lucide="arrow-left" style="width:24px;"></i>
             </button>
-            <div class="flex flex-col" id="app-header-left">
+            <div class="flex flex-col flex-1 min-w-0" id="app-header-left">
                 </div>
         </div>
-        <div class="flex items-center gap-4 pl-4 ml-4" id="app-header-right">
+        <div class="flex items-center gap-2 sm:gap-4 pl-2 sm:pl-4 ml-2 sm:ml-4 shrink-0" id="app-header-right">
             </div>
     </header>
 
     <main id="planner-view" class="hidden pt-28 px-4 md:px-12 max-w-5xl mx-auto space-y-12 pb-24 z-10 relative">
-        <nav id="filter-nav" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar"></nav>
+        <nav id="filter-nav" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar"></nav>
         <div id="planner-content" class="space-y-12"></div>
     </main>
 
     <main id="ledger-view" class="hidden pt-28 px-4 md:px-12 max-w-[600px] mx-auto space-y-8 pb-24 z-10 relative">
-        <nav class="flex w-full justify-between items-end border-b border-outline-variant/30">
-            <button id="tabbtn-dash" class="px-2 py-3 text-sm font-bold text-primary border-b-2 border-primary" onclick="window.switchLedgerTab('dash')">Overview</button>
-            <button id="tabbtn-party" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary" onclick="window.switchLedgerTab('party')">Party</button>
-            <button id="tabbtn-ledger" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary" onclick="window.switchLedgerTab('ledger')">Ledger</button>
-            <button id="tabbtn-settle" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary" onclick="window.switchLedgerTab('settle')">Settle</button>
+        <nav class="flex w-full justify-start sm:justify-between overflow-x-auto no-scrollbar items-end border-b border-outline-variant/30 gap-4 sm:gap-0">
+            <button id="tabbtn-dash" class="px-2 py-3 text-sm font-bold text-primary border-b-2 border-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('dash')">Overview</button>
+            <button id="tabbtn-party" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('party')">Party</button>
+            <button id="tabbtn-ledger" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('ledger')">Ledger</button>
+            <button id="tabbtn-settle" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('settle')">Settle</button>
         </nav>
 
         <div id="tab-dash" class="block space-y-8">
             <section class="space-y-2">
                 <p class="text-xs font-label uppercase tracking-widest text-on-surface-variant opacity-70">Total Collective Spending</p>
                 <div class="flex items-baseline gap-2">
-                    <span id="totalSpentDisplay" class="text-5xl font-headline font-extrabold text-primary">0.00</span>
+                    <span id="totalSpentDisplay" class="text-4xl sm:text-5xl font-headline font-extrabold text-primary break-all">0.00</span>
                 </div>
             </section>
             
-            <section class="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/20 relative overflow-hidden group">
+            <section class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-outline-variant/20 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h3 class="font-headline text-lg font-bold text-on-surface">Spending Velocity</h3>
@@ -352,14 +353,14 @@
                 <h3 class="font-headline text-xl font-bold italic text-on-surface">Travel Party</h3>
             </header>
             <form id="addUserForm" class="flex gap-2" onsubmit="window.addUser(event)">
-                <input type="text" id="userName" class="field-input flex-1 bg-white border border-outline-variant/30 rounded-lg h-12 px-4" placeholder="Enter name" required>
-                <button type="submit" class="btn-primary h-12 px-6">Add</button>
+                <input type="text" id="userName" class="field-input flex-1 bg-white border border-outline-variant/30 rounded-lg h-12 px-4 min-w-0" placeholder="Enter name" required>
+                <button type="submit" class="btn-primary h-12 px-6 shrink-0">Add</button>
             </form>
             <ul id="userList" class="space-y-2"></ul>
         </div>
 
         <div id="tab-ledger" class="hidden space-y-8">
-            <section class="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/20">
+            <section class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-outline-variant/20">
                 <h3 class="font-headline text-xl font-bold italic text-on-surface mb-4" id="expenseFormTitle">Add Expense</h3>
                 <form id="addExpenseForm" class="space-y-4" onsubmit="window.saveExpense(event)">
                     <select id="expenseCategory" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full" required>
@@ -381,9 +382,9 @@
                     <p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest pt-2">Who splits it?</p>
                     <div id="involvedUsersContainer" class="grid grid-cols-2 gap-3 p-4 bg-surface-container-low rounded-lg"></div>
                     
-                    <div class="flex gap-2 pt-2">
-                        <button type="submit" id="submitExpenseBtn" class="btn-primary flex-1">Save</button>
-                        <button type="button" class="btn-secondary flex-1" id="cancelEditBtn" style="display:none;" onclick="window.cancelEdit()">Cancel</button>
+                    <div class="flex gap-2 pt-2 flex-wrap">
+                        <button type="submit" id="submitExpenseBtn" class="btn-primary flex-1 min-w-[120px]">Save</button>
+                        <button type="button" class="btn-secondary flex-1 min-w-[120px]" id="cancelEditBtn" style="display:none;" onclick="window.cancelEdit()">Cancel</button>
                     </div>
                 </form>
             </section>
@@ -404,7 +405,7 @@
     </main>
 
     <div id="edit-confirm-modal" class="fixed-modal">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl border border-outline-variant/20">
+        <div class="bg-white w-full max-w-sm mx-4 rounded-2xl p-6 sm:p-8 text-center shadow-2xl border border-outline-variant/20">
             <h3 class="font-headline text-2xl font-bold text-primary mb-2">Enable Edit Mode?</h3>
             <p class="text-on-surface-variant mb-6 text-sm">You are about to modify this journey's details. Proceed?</p>
             <div class="flex gap-3 justify-center">
@@ -415,9 +416,9 @@
     </div>
 
     <div id="delete-modal" class="fixed-modal">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl border border-outline-variant/20">
+        <div class="bg-white w-full max-w-sm mx-4 rounded-2xl p-6 sm:p-8 text-center shadow-2xl border border-outline-variant/20">
             <h3 class="font-headline text-2xl font-bold text-error mb-2">Erase Journey?</h3>
-            <p id="delete-modal-msg" class="text-on-surface-variant mb-6 text-sm"></p>
+            <p id="delete-modal-msg" class="text-on-surface-variant mb-6 text-sm break-words"></p>
             <div class="flex gap-3 justify-center">
                 <button class="btn-secondary" onclick="window.closeDeleteModal()">Cancel</button>
                 <button class="btn-primary bg-error shadow-none hover:bg-[#8f2b2b]" onclick="window.confirmDeletePlanner()">Erase Forever</button>
@@ -750,31 +751,31 @@ window.deleteBaseEstimate = function(idx) {
 window.renderPlannerHeader = function() {
     const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
     document.getElementById('app-header-left').innerHTML = `
-        <div class="font-serif italic text-2xl text-primary outline-none whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] md:max-w-md needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerTitle(this.innerText)">${window.sanitizeText(window.tripData.overview.title)}</div>
+        <div class="font-serif italic text-xl sm:text-2xl text-primary outline-none truncate w-full max-w-[200px] sm:max-w-xs md:max-w-md needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerTitle(this.innerText)">${window.sanitizeText(window.tripData.overview.title)}</div>
         <div class="flex items-center gap-2 mt-1">
-            <span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded uppercase tracking-tighter outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerDates(this.innerText)">${window.sanitizeText(window.tripData.overview.dates)}</span>
-            <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-tighter outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerPax(this.innerText)">${window.sanitizeText(window.tripData.overview.pax || '1')} Pax</span>
+            <span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded uppercase tracking-tighter outline-none needs-edit-mode break-all sm:break-normal" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerDates(this.innerText)">${window.sanitizeText(window.tripData.overview.dates)}</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-tighter outline-none needs-edit-mode shrink-0" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updatePlannerPax(this.innerText)">${window.sanitizeText(window.tripData.overview.pax || '1')} Pax</span>
         </div>
     `;
     document.getElementById('app-header-right').innerHTML = `
-        <div class="hidden md:flex flex-col items-end mr-4 pr-4 border-r border-outline-variant/30">
+        <div class="hidden md:flex flex-col items-end mr-4 pr-4 border-r border-outline-variant/30 shrink-0">
             <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none mb-1">Grand Total</p>
             <p class="font-serif text-2xl text-primary font-bold">$${grandTotal.toLocaleString()}</p>
         </div>
-        <button id="edit-mode-btn" onclick="window.requestEditMode()" class="mr-2 px-4 py-2 font-bold rounded-full text-xs transition-colors flex items-center gap-2 ${window.isEditMode ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-primary/10'}">
-            <i data-lucide="${window.isEditMode ? 'check' : 'edit-3'}" style="width:14px;"></i> ${window.isEditMode ? 'Done' : 'Edit'}
+        <button id="edit-mode-btn" onclick="window.requestEditMode()" class="mr-1 sm:mr-2 px-3 sm:px-4 py-2 font-bold rounded-full text-xs transition-colors flex items-center gap-1 sm:gap-2 shrink-0 ${window.isEditMode ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-primary/10'}">
+            <i data-lucide="${window.isEditMode ? 'check' : 'edit-3'}" style="width:14px;"></i> <span class="hidden xs:inline">${window.isEditMode ? 'Done' : 'Edit'}</span>
         </button>
-        <button onclick="window.copyPlannerLink()" class="text-on-surface-variant hover:text-primary transition-colors p-2"><i data-lucide="share" style="width:20px;"></i></button>
-        ${window.isEditMode ? `<button onclick="window.openDeleteModal()" class="text-on-surface-variant hover:text-error transition-colors p-2"><i data-lucide="trash-2" style="width:20px;"></i></button>` : ''}
+        <button onclick="window.copyPlannerLink()" class="text-on-surface-variant hover:text-primary transition-colors p-1 sm:p-2 shrink-0"><i data-lucide="share" style="width:20px;"></i></button>
+        ${window.isEditMode ? `<button onclick="window.openDeleteModal()" class="text-on-surface-variant hover:text-error transition-colors p-1 sm:p-2 shrink-0"><i data-lucide="trash-2" style="width:20px;"></i></button>` : ''}
     `;
     lucide.createIcons({ nodes: [document.getElementById('app-header')] });
 }
 
 window.renderPlannerFilters = function() {
     const nav = document.getElementById('filter-nav');
-    let html = `<button onclick="window.setFilter('all')" class="px-6 py-2 rounded-full text-sm font-label whitespace-nowrap transition-colors ${window.activeFilter === 'all' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">Full Itinerary</button>`;
+    let html = `<button onclick="window.setFilter('all')" class="px-4 sm:px-6 py-2 rounded-full text-sm font-label whitespace-nowrap shrink-0 transition-colors ${window.activeFilter === 'all' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">Full Itinerary</button>`;
     (window.tripData.locations || []).forEach(loc => {
-        html += `<button onclick="window.setFilter('${window.sanitizeText(loc.id)}')" class="px-6 py-2 rounded-full text-sm font-label whitespace-nowrap transition-colors ${window.activeFilter === loc.id ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">${window.sanitizeText(loc.name)}</button>`;
+        html += `<button onclick="window.setFilter('${window.sanitizeText(loc.id)}')" class="px-4 sm:px-6 py-2 rounded-full text-sm font-label whitespace-nowrap shrink-0 transition-colors ${window.activeFilter === loc.id ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">${window.sanitizeText(loc.name)}</button>`;
     });
     nav.innerHTML = html;
 }
@@ -811,17 +812,17 @@ window.getBaseBudgetTotal = function() { return (window.tripData.budget || []).r
 window.renderBudget = function() {
     if (!window.tripData.budget || !window.tripData.budget.length) {
         if(window.isEditMode) {
-            return `<section class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-surface-container-low p-6 rounded-xl shadow-sm border-2 border-dashed border-outline-variant/40 flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-surface-container-high transition-colors" onclick="window.addBaseEstimate()"><div class="text-center text-on-surface-variant"><i data-lucide="plus-circle" class="mx-auto mb-2" style="width:24px;"></i><span class="font-bold text-sm">Add Estimate</span></div></div></section>`;
+            return `<section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6"><div class="bg-surface-container-low p-6 rounded-xl shadow-sm border-2 border-dashed border-outline-variant/40 flex items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-surface-container-high transition-colors" onclick="window.addBaseEstimate()"><div class="text-center text-on-surface-variant"><i data-lucide="plus-circle" class="mx-auto mb-2" style="width:24px;"></i><span class="font-bold text-sm">Add Estimate</span></div></div></section>`;
         }
         return '';
     }
     
-    let html = `<section class="grid grid-cols-1 md:grid-cols-3 gap-6">`;
+    let html = `<section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">`;
     window.tripData.budget.forEach((item, idx) => {
         html += `<div class="bg-white p-6 rounded-xl shadow-sm border-b-2 border-primary/20 relative group">
             ${window.isEditMode ? `<button onclick="window.deleteBaseEstimate(${idx})" class="absolute top-4 right-4 text-outline-variant hover:text-error transition-colors p-1"><i data-lucide="x" style="width:16px;"></i></button>` : ''}
             <div class="flex justify-between items-start mb-4"><i data-lucide="${window.sanitizeText(item.icon || 'circle')}" class="text-primary" style="width:20px;"></i><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Base Estimate</span></div>
-            <label class="block text-xs font-label font-bold text-on-surface-variant mb-1 needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.budget[${idx}].item=this.innerText;window.schedulePlannerSave();">${window.sanitizeText(item.item)}</label>
+            <label class="block text-xs font-label font-bold text-on-surface-variant mb-1 needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.tripData.budget[${idx}].item=this.innerText;window.schedulePlannerSave();">${window.sanitizeText(item.item)}</label>
             <div class="relative">
             <span class="absolute left-0 bottom-2 text-primary font-serif">$</span>
             <input class="needs-edit-mode w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary pt-2 pb-1 pl-4 font-serif text-xl focus:ring-0 outline-none" type="number" min="0" value="${item.amount || 0}" onchange="window.updateBaseExpense(${idx}, this.value)" ${window.isEditMode ? '' : 'readonly'}/></div>
@@ -841,12 +842,12 @@ window.renderExpenseSummary = function() {
     const activityTotal = window.activeFilter === 'all' ? window.getTotalActivityExpenses() : window.getLocationExpenses(window.activeFilter);
     const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
     const pct = Math.min((window.getTotalActivityExpenses() / (grandTotal || 1)) * 100, 100);
-    return `<section id="expense-summary-section" class="bg-surface-container-low p-8 rounded-2xl border-l-4 border-secondary-container">
-        <div class="flex justify-between items-center mb-6">
+    return `<section id="expense-summary-section" class="bg-surface-container-low p-6 sm:p-8 rounded-2xl border-l-4 border-secondary-container">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-2">
             <div><h3 class="font-serif text-xl">Activity Spend Summary</h3>
             ${window.isEditMode ? `<p class="text-sm text-on-surface-variant cursor-pointer hover:text-error transition-colors" onclick="window.zeroisePlannerExpenses()">Reset Actuals to 0</p>` : `<p class="text-sm text-on-surface-variant">Daily excursions and costs</p>`}
             </div>
-            <div class="text-right"><p class="text-lg font-bold font-serif">$${activityTotal.toLocaleString()}</p></div>
+            <div class="text-left sm:text-right"><p class="text-lg font-bold font-serif break-all">$${activityTotal.toLocaleString()}</p></div>
         </div>
         <div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div></div>
     </section>`;
@@ -860,39 +861,41 @@ window.renderTimeline = function() {
     let html = `<section class="space-y-8 relative"><div class="absolute left-6 top-8 bottom-0 w-0.5 bg-outline-variant/30 md:left-8 z-0"></div>`;
     days.forEach(day => {
         const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
-        html += `<div class="relative pl-14 md:pl-20 z-10">
+        html += `<div class="relative pl-12 md:pl-20 z-10">
             <div class="absolute left-0 top-0 w-12 h-12 md:w-16 md:h-16 bg-primary text-white rounded-xl flex flex-col items-center justify-center shadow-lg transform rotate-[-2deg]">
                 <span class="text-[10px] font-bold uppercase tracking-tighter">Day</span><span class="text-2xl font-serif leading-none">${day.day}</span>
             </div>
             <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-outline-variant/20">
-                <div class="p-6 md:p-8">
+                <div class="p-4 sm:p-6 md:p-8">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                        <div>
-                            <p class="text-xs font-bold text-tertiary uppercase tracking-widest mb-1 outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateDayDate(${day.day}, this.innerText)">${window.sanitizeText(day.date)}</p>
-                            <h4 class="font-serif text-3xl outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateDayTitle(${day.day}, this.innerText)">${window.sanitizeText(day.title)}</h4>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold text-tertiary uppercase tracking-widest mb-1 outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateDayDate(${day.day}, this.innerText)">${window.sanitizeText(day.date)}</p>
+                            <h4 class="font-serif text-2xl sm:text-3xl outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateDayTitle(${day.day}, this.innerText)">${window.sanitizeText(day.title)}</h4>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <div class="text-right"><p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">Day Cost</p><p class="font-serif text-xl text-primary" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</p></div>
-                            ${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-low hover:bg-surface-container-high rounded-lg border border-outline-variant/20 text-sm font-label transition-colors"><i data-lucide="map" style="width:14px;"></i> Map</button>` : ''}
+                        <div class="flex items-center gap-4 self-start md:self-auto shrink-0">
+                            <div class="text-left md:text-right"><p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">Day Cost</p><p class="font-serif text-xl text-primary" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</p></div>
+                            ${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="flex items-center gap-2 px-3 sm:px-4 py-2 bg-surface-container-low hover:bg-surface-container-high rounded-lg border border-outline-variant/20 text-sm font-label transition-colors"><i data-lucide="map" style="width:14px;"></i> Map</button>` : ''}
                         </div>
                     </div>
                     ${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}
-                    <div class="space-y-8 relative pl-4">`;
+                    <div class="space-y-6 sm:space-y-8 relative pl-2 sm:pl-4 border-l border-outline-variant/10 sm:border-none">`;
         
         (day.events || []).forEach((event, idx) => {
             const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" class="text-primary hover:underline">${rawDesc}</a>` : rawDesc;
             html += `<div class="relative group">
-                <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-white"></div>
-                <div class="flex flex-col md:flex-row gap-4 md:items-start">
-                    <div class="w-24 pt-1 shrink-0"><p class="text-xs font-bold text-on-surface-variant font-label outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</p></div>
-                    <div class="flex-1"><div class="flex justify-between items-start">
-                        <div class="flex-1 pr-4"><div class="font-bold text-lg leading-tight mb-1 outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div>
-                        <div class="flex items-center gap-2 bg-surface-container-low rounded-lg px-2 border border-outline-variant/20">
-                            <span class="text-xs text-on-surface-variant">$</span>
-                            <input type="number" min="0" step="1" class="w-20 bg-transparent border-none focus:ring-0 text-right p-1 font-serif text-primary needs-edit-mode" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)" ${window.isEditMode ? '' : 'readonly'}>
-                            ${window.isEditMode ? `<button onclick="window.deletePlannerEvent(${day.day}, ${idx})" class="text-outline-variant hover:text-error transition-colors p-1"><i data-lucide="x" style="width:14px;"></i></button>` : ''}
+                <div class="hidden sm:block absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-white"></div>
+                <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-start">
+                    <div class="sm:w-24 pt-1 shrink-0"><p class="text-xs font-bold text-on-surface-variant font-label outline-none needs-edit-mode" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</p></div>
+                    <div class="flex-1 w-full min-w-0">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
+                            <div class="flex-1 w-full sm:pr-4"><div class="font-bold text-lg leading-tight mb-1 outline-none needs-edit-mode break-words" ${window.isEditMode ? 'contenteditable="true"' : ''} onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div>
+                            <div class="flex items-center gap-2 self-start sm:self-auto bg-surface-container-low rounded-lg px-2 border border-outline-variant/20 shrink-0">
+                                <span class="text-xs text-on-surface-variant">$</span>
+                                <input type="number" min="0" step="1" class="w-16 sm:w-20 bg-transparent border-none focus:ring-0 text-right p-1 font-serif text-primary needs-edit-mode" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)" ${window.isEditMode ? '' : 'readonly'}>
+                                ${window.isEditMode ? `<button onclick="window.deletePlannerEvent(${day.day}, ${idx})" class="text-outline-variant hover:text-error transition-colors p-1"><i data-lucide="x" style="width:14px;"></i></button>` : ''}
+                            </div>
                         </div>
-                    </div></div>
+                    </div>
                 </div>
             </div>`;
         });
@@ -967,8 +970,8 @@ window.fetchLedgerTrips = async function() {
         
         window.ledgerTrips.reverse().forEach(trip => {
             listEl.innerHTML += `<button class="w-full bg-white hover:bg-surface-container-low transition-colors p-4 rounded-xl shadow-sm border border-outline-variant/20 flex items-center justify-between" onclick="window.openLedger('${trip.id}')">
-                <span class="font-headline font-bold text-primary flex items-center gap-2"><i data-lucide="book-open" style="width:18px;"></i> ${window.sanitizeText(trip.name)}</span>
-                <span class="text-xs font-label text-on-surface-variant bg-surface-container p-1 px-2 rounded">${(trip.users||[]).length} Pax</span>
+                <span class="font-headline font-bold text-primary flex items-center gap-2 truncate pr-2"><i data-lucide="book-open" style="width:18px;" class="shrink-0"></i> <span class="truncate">${window.sanitizeText(trip.name)}</span></span>
+                <span class="text-xs font-label text-on-surface-variant bg-surface-container p-1 px-2 rounded shrink-0">${(trip.users||[]).length} Pax</span>
             </button>`;
         });
         lucide.createIcons({ nodes: [listEl] });
@@ -1011,10 +1014,10 @@ window.saveLedgerData = async function(tripToSave) {
 
 // Ledger Header & Actions
 window.setupLedgerHeader = function(trip) {
-    document.getElementById('app-header-left').innerHTML = `<h1 class="text-2xl font-headline italic font-bold text-primary tracking-tight">${window.sanitizeText(trip.name)}</h1>`;
+    document.getElementById('app-header-left').innerHTML = `<h1 class="text-xl sm:text-2xl font-headline italic font-bold text-primary tracking-tight truncate">${window.sanitizeText(trip.name)}</h1>`;
     document.getElementById('app-header-right').innerHTML = `
-        <button onclick="window.copyLedgerLink()" class="text-on-surface-variant hover:text-primary transition-colors"><i data-lucide="share" style="width:20px;"></i></button>
-        <button onclick="window.deleteLedger()" class="text-on-surface-variant hover:text-error transition-colors"><i data-lucide="trash-2" style="width:20px;"></i></button>
+        <button onclick="window.copyLedgerLink()" class="text-on-surface-variant hover:text-primary transition-colors p-1"><i data-lucide="share" style="width:20px;"></i></button>
+        <button onclick="window.deleteLedger()" class="text-on-surface-variant hover:text-error transition-colors p-1"><i data-lucide="trash-2" style="width:20px;"></i></button>
     `;
     lucide.createIcons({ nodes: [document.getElementById('app-header')] });
 }
@@ -1138,9 +1141,9 @@ window.renderLedgerDetails = function() {
     if(trip.users.length === 0) userList.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">Empty party.</div>';
 
     trip.users.forEach(user => {
-        userList.innerHTML += `<li class="flex items-center justify-between p-3 bg-white border border-outline-variant/20 rounded-lg shadow-sm"><span class="font-bold">${window.sanitizeText(user)}</span><button class="text-outline-variant hover:text-error" onclick="window.deleteUser('${window.sanitizeText(user).replace(/'/g, "\\'")}')"><i data-lucide="x" style="width:16px;"></i></button></li>`;
+        userList.innerHTML += `<li class="flex items-center justify-between p-3 bg-white border border-outline-variant/20 rounded-lg shadow-sm"><span class="font-bold break-words">${window.sanitizeText(user)}</span><button class="text-outline-variant hover:text-error shrink-0 ml-2" onclick="window.deleteUser('${window.sanitizeText(user).replace(/'/g, "\\'")}')"><i data-lucide="x" style="width:16px;"></i></button></li>`;
         expPayer.innerHTML += `<option value="${window.sanitizeText(user)}">${window.sanitizeText(user)}</option>`;
-        invCont.innerHTML += `<label class="flex items-center gap-2 font-bold text-sm cursor-pointer"><input type="checkbox" name="involved" value="${window.sanitizeText(user)}" class="rounded text-primary focus:ring-primary" checked> ${window.sanitizeText(user)}</label>`;
+        invCont.innerHTML += `<label class="flex items-center gap-2 font-bold text-sm cursor-pointer min-w-0"><input type="checkbox" name="involved" value="${window.sanitizeText(user)}" class="rounded text-primary focus:ring-primary shrink-0" checked> <span class="truncate">${window.sanitizeText(user)}</span></label>`;
     });
 
     document.getElementById('expenseAmount').placeholder = `Amount (${curr})`;
@@ -1160,9 +1163,9 @@ window.renderLedgerDetails = function() {
         }
 
         expLog.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20">
-            <div class="flex justify-between mb-3">
-                <div>${displayDesc}<p class="text-xs text-on-surface-variant mt-1">Paid by ${window.sanitizeText(exp.payer)}</p></div>
-                <div class="text-right"><span class="font-serif text-xl font-bold text-primary">${curr}${exp.amount.toFixed(2)}</span></div>
+            <div class="flex flex-col sm:flex-row sm:justify-between gap-2 mb-3">
+                <div class="flex-1 min-w-0 break-words">${displayDesc}<p class="text-xs text-on-surface-variant mt-1">Paid by ${window.sanitizeText(exp.payer)}</p></div>
+                <div class="text-left sm:text-right shrink-0 mt-1 sm:mt-0"><span class="font-serif text-xl font-bold text-primary">${curr}${exp.amount.toFixed(2)}</span></div>
             </div>
             <div class="flex gap-2 border-t border-outline-variant/20 pt-2"><button class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors flex-1 text-center py-1" onclick="window.editExpense('${exp.id}')">Edit</button><button class="text-xs font-bold text-on-surface-variant hover:text-error transition-colors flex-1 text-center py-1" onclick="window.deleteExpense('${exp.id}')">Delete</button></div>
         </li>`;
@@ -1184,12 +1187,12 @@ window.renderLedgerDetails = function() {
         const colors = ['bg-primary', 'bg-tertiary', 'bg-secondary', 'bg-primary-dim'];
         Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).forEach(([cat, amt], idx) => {
             const colorClass = colors[idx % colors.length];
-            catSum.innerHTML += `<div class="space-y-1"><div class="flex justify-between text-sm font-label font-bold"><span>${window.sanitizeText(cat)}</span><span>${curr}${amt.toFixed(2)}</span></div><div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / totalCost) * 100}%"></div></div></div>`;
+            catSum.innerHTML += `<div class="space-y-1"><div class="flex justify-between text-sm font-label font-bold gap-2"><span class="truncate">${window.sanitizeText(cat)}</span><span class="shrink-0">${curr}${amt.toFixed(2)}</span></div><div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / totalCost) * 100}%"></div></div></div>`;
         });
         const sortedPersons = Object.entries(individualShare).sort((a, b) => b[1] - a[1]); const maxShare = sortedPersons.length > 0 ? sortedPersons[0][1] : 1; 
         sortedPersons.forEach(([person, amt], idx) => {
             const colorClass = colors[idx % colors.length];
-            perSum.innerHTML += `<div class="bg-white p-4 rounded-xl flex items-center gap-4 shadow-sm border-l-4 ${colorClass.replace('bg-', 'border-')}"><div class="flex-1 space-y-1"><div class="flex justify-between text-xs font-label font-bold"><span>${window.sanitizeText(person)}</span><span>${curr}${amt.toFixed(2)}</span></div><div class="h-1.5 w-full bg-surface-container-low rounded-full"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / maxShare) * 100}%"></div></div></div></div>`;
+            perSum.innerHTML += `<div class="bg-white p-4 rounded-xl flex items-center gap-4 shadow-sm border-l-4 ${colorClass.replace('bg-', 'border-')}"><div class="flex-1 space-y-1 min-w-0"><div class="flex justify-between text-xs font-label font-bold gap-2"><span class="truncate">${window.sanitizeText(person)}</span><span class="shrink-0">${curr}${amt.toFixed(2)}</span></div><div class="h-1.5 w-full bg-surface-container-low rounded-full"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / maxShare) * 100}%"></div></div></div></div>`;
         });
     }
 
@@ -1213,9 +1216,9 @@ window.renderLedgerDetails = function() {
     } else {
         window.currentSettlements.forEach(s => {
             setList.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="font-bold text-sm text-error">${window.sanitizeText(s.from)} <span class="text-on-surface-variant font-normal px-1">→</span> <span class="text-success">${window.sanitizeText(s.to)}</span></span>
-                    <span class="font-serif font-bold text-lg bg-surface-container-low px-2 rounded">${curr}${s.amount.toFixed(2)}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2">
+                    <span class="font-bold text-sm text-error break-words">${window.sanitizeText(s.from)} <span class="text-on-surface-variant font-normal px-1">→</span> <span class="text-success break-words">${window.sanitizeText(s.to)}</span></span>
+                    <span class="font-serif font-bold text-lg bg-surface-container-low px-2 rounded self-start sm:self-auto">${curr}${s.amount.toFixed(2)}</span>
                 </div>
                 <button class="w-full bg-success/10 text-success font-bold text-sm py-2 rounded-lg hover:bg-success hover:text-white transition-colors" onclick="window.executeSettlement('${window.sanitizeText(s.from).replace(/'/g, "\\'")}', '${window.sanitizeText(s.to).replace(/'/g, "\\'")}', ${s.amount})">Mark as Paid</button>
             </li>`;
