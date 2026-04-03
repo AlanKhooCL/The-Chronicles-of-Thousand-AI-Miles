@@ -1,639 +1,398 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Journeys & Ledgers — Beyond Journey's End</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Kamakura Horizon | Journeys & Ledgers</title>
+    
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet"/>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "background": "#fbf9f4",
+              "surface": "#fbf9f4",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-low": "#f5f4ee",
+              "surface-container": "#efeee8",
+              "surface-container-high": "#e9e8e1",
+              "primary": "#256296",
+              "on-primary": "#f7f9ff",
+              "primary-container": "#90c5ff",
+              "primary-dim": "#12568a",
+              "secondary": "#685e4e",
+              "secondary-container": "#feefda",
+              "on-secondary-container": "#635949",
+              "secondary-dim": "#5c5242",
+              "tertiary": "#426659",
+              "tertiary-container": "#bee6d5",
+              "on-tertiary-container": "#315548",
+              "tertiary-dim": "#365a4d",
+              "error": "#ac3434",
+              "error-container": "#f56965",
+              "on-surface": "#31332e",
+              "on-surface-variant": "#5e605a",
+              "outline-variant": "#b2b2ab",
+              "success": "#10b981"
+            },
+            fontFamily: {
+              "headline": ["Newsreader", "serif"],
+              "body": ["Plus Jakarta Sans", "sans-serif"],
+              "label": ["Plus Jakarta Sans", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
     <style>
-        :root {
-            /* Frieren Mystical Dark Theme */
-            --bg-base: #060a10;
-            --bg-card: rgba(10, 18, 28, 0.65);
-            --bg-card-hover: rgba(14, 24, 38, 0.85);
-            --bg-input: rgba(0, 0, 0, 0.4);
-            
-            --text-main: #c8d8e8;
-            --text-muted: #6a90a8;
-            --text-title: #ffffff;
-            
-            --accent: #7ab8d0;
-            --accent-glow: rgba(100, 180, 220, 0.2);
-            --border: rgba(100, 160, 200, 0.2);
-            
-            --success: #10b981;
-            --danger: #ef4444;
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fbf9f4; color: #31332e; overflow-x: hidden; }
+        .font-serif { font-family: 'Newsreader', serif; }
+        
+        .grain-texture {
+            position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
-
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: 'Crimson Pro', serif;
-            background: linear-gradient(160deg, #060a10 0%, #0e1a2a 40%, #0a1520 70%, #060e18 100%);
+        .watercolor-bg {
+            background-image: radial-gradient(at 0% 0%, #fbf9f4 0, transparent 50%),
+                              radial-gradient(at 50% 0%, #f5f4ee 0, transparent 50%),
+                              radial-gradient(at 100% 0%, #bee6d533 0, transparent 50%),
+                              radial-gradient(at 0% 100%, #feefda33 0, transparent 50%);
+            background-size: 100% 100%;
             background-attachment: fixed;
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-            margin: 0;
         }
 
-        h1, h2, h3, .serif { font-family: 'Cinzel', serif; color: var(--text-title); }
-        .sans { font-family: 'DM Sans', sans-serif; }
-
-        /* Editable Fields Styling */
+        /* Interactive Inputs */
         [contenteditable="true"] {
-            transition: background-color 0.2s, box-shadow 0.2s;
-            cursor: text;
-            border-radius: 4px;
-            padding: 2px 4px;
-            margin: -2px -4px;
-        }
-        [contenteditable="true"]:hover { background-color: rgba(255,255,255,0.05); }
-        [contenteditable="true"]:focus {
+            transition: background-color 0.2s, box-shadow 0.2s; cursor: text;
+            border-radius: 4px; padding: 2px 4px; margin: -2px -4px;
             outline: none;
-            background-color: rgba(0,0,0,0.6);
-            box-shadow: 0 0 0 2px var(--accent-glow);
         }
+        [contenteditable="true"]:hover { background-color: rgba(0,0,0,0.03); }
+        [contenteditable="true"]:focus { background-color: #fff; box-shadow: 0 0 0 2px rgba(37,98,150,0.2); }
+        
+        .field-input, .select-input {
+            width: 100%; border: none; border-bottom: 2px solid var(--outline-variant); 
+            background: transparent; padding: 12px 16px; font-size: 1rem;
+            color: var(--primary); font-family: 'Newsreader', serif; transition: all 0.3s; outline: none;
+        }
+        .field-input:focus, .select-input:focus { border-bottom-color: var(--primary); background: #fff; border-radius: 8px 8px 0 0; }
+        .field-input::placeholder { color: var(--on-surface-variant); opacity: 0.5; font-style: italic; }
 
-        /* ---- TOAST ---- */
+        .btn-primary {
+            background: var(--primary); color: #fff; padding: 12px 24px; border-radius: 9999px;
+            font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s;
+            box-shadow: 0 4px 14px rgba(37,98,150,0.2); border: none; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,98,150,0.3); background: var(--primary-dim); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-secondary {
+            background: #fff; color: var(--primary); padding: 12px 24px; border-radius: 9999px;
+            font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s;
+            border: 1px solid rgba(37,98,150,0.2); cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-secondary:hover:not(:disabled) { background: var(--surface-container-low); border-color: var(--primary); }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Toasts & Loaders */
         #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
-        .toast { padding: 10px 20px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: auto; animation: toastIn 0.3s ease forwards; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border); }
-        .toast.success { background: rgba(16,185,129,0.1); color: var(--success); border-color: var(--success); backdrop-filter: blur(8px); }
-        .toast.error   { background: rgba(239,68,68,0.1); color: var(--danger); border-color: var(--danger); backdrop-filter: blur(8px); }
-        .toast.info    { background: var(--bg-card); color: var(--accent); backdrop-filter: blur(8px); }
-        .toast.warning { background: rgba(245,158,11,0.1); color: #fcd34d; border-color: #fcd34d; backdrop-filter: blur(8px); }
-        @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .toast { padding: 12px 24px; border-radius: 100px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.1); pointer-events: auto; animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e9e8e1; color: var(--on-surface); }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--error); }
+        .toast.info i { color: var(--primary); }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        /* ---- SAVE INDICATOR ---- */
         #save-indicator {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
-            background: var(--bg-card); border: 1px solid var(--border);
+            position: fixed; top: 20px; right: 20px; z-index: 9999; background: #fff; border: 1px solid #e9e8e1;
             border-radius: 100px; padding: 8px 16px; display: flex; align-items: center; gap: 8px;
-            font-size: 0.8rem; font-weight: 600; color: var(--accent); font-family: 'DM Sans', sans-serif;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+            font-size: 0.8rem; font-weight: 600; color: var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             opacity: 0; transform: translateY(-10px); pointer-events: none; transition: all 0.3s ease;
         }
-        #save-indicator.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        #save-indicator.error { color: var(--danger); border-color: var(--danger); }
+        #save-indicator.show { opacity: 1; transform: translateY(0); }
+        #save-indicator.error { color: var(--error); }
 
-        /* ============================================================
-           FRIERENCRAFT SHARED UI ELEMENTS
-           ============================================================ */
-        .glass-card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 12px; backdrop-filter: blur(12px); 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(100,160,200,0.03);
-            padding: 24px; position: relative;
-        }
-
-        .field-label {
-            font-size: 0.65rem; font-weight: 600; letter-spacing: 0.15em;
-            text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: block; font-family: 'Cinzel', serif;
-        }
-
-        .field-input, .select-input {
-            width: 100%; border: 1px solid var(--border); border-radius: 8px;
-            padding: 11px 14px; font-size: 1.05rem; font-family: 'Crimson Pro', serif;
-            color: var(--text-main); background: var(--bg-input); transition: all 0.3s; outline: none; margin-bottom: 16px;
-        }
-        .field-input:focus, .select-input:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); background: rgba(0,0,0,0.6); }
-        .field-input::placeholder { color: #3a5870; font-style: italic; }
-        textarea.field-input { resize: none; }
-        .select-input option { background: var(--bg-base); color: var(--text-main); }
-        .select-input:disabled { opacity: 0.5; }
-
-        .btn-primary, .btn-secondary {
-            width: 100%; background: transparent; border: 1px solid #4a7090; color: #8ab8cc;
-            font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.25em; border-radius: 8px;
-            padding: 13px; cursor: pointer; transition: all 0.4s ease; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;
-        }
-        .btn-secondary { padding: 11px 20px; font-size: 0.85rem; letter-spacing: 0.15em; }
-        
-        .btn-primary::before, .btn-secondary::before {
-            content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(100,180,220,0.1), transparent);
-            transform: translateX(-100%); transition: transform 0.5s ease;
-        }
-        .btn-primary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
-            border-color: var(--accent); color: #c8e8f8; box-shadow: 0 0 20px var(--accent-glow); background: rgba(100,180,220,0.05);
-        }
-        .btn-primary:hover:not(:disabled)::before, .btn-secondary:hover:not(:disabled)::before { transform: translateX(100%); }
-        .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; border-color: #2a4050; color: #3a5870; }
-
-        .icon-btn {
-            background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-main);
-            display: flex; align-items: center; gap: 6px; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
-        }
-        .icon-btn:hover { background: var(--bg-card-hover); border-color: var(--accent); color: var(--accent); }
-        .icon-btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); }
-        .icon-btn.danger:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); }
-
-        .divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
-        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-        .divider span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); font-family: 'Cinzel', serif; }
-
-        /* ============================================================
-           LANDING OVERLAY & PORTALS
-           ============================================================ */
-        #ai-overlay {
-            position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; 
-            justify-content: flex-start; padding: 20px; overflow-y: auto; overflow-x: hidden;
-            transition: opacity 1.5s ease; background: var(--bg-base);
-        }
-        .overlay-scroll-wrapper { position: relative; z-index: 1; width: 100%; max-width: 600px; margin: auto; display: flex; flex-direction: column; align-items: center; padding: 40px 0; }
-        #title-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-
-        .frieren-rune { font-size: 1.4rem; color: #3a6070; letter-spacing: 1.5em; margin-left: 1.5em; z-index: 1; }
-        .frieren-logo {
-            font-family: 'Cinzel', serif; font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 600;
-            letter-spacing: 0.15em; background: linear-gradient(135deg, #a8c4d8 0%, #7eb8d4 30%, #c8e0f0 60%, #8ab8cc 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-            filter: drop-shadow(0 0 40px rgba(150,210,240,0.3)); animation: titleGlow 3s ease-in-out infinite alternate;
-            z-index: 1; text-align: center; line-height: 1.1; margin-bottom: 0.2rem;
-        }
-        @keyframes titleGlow { from { filter: drop-shadow(0 0 20px rgba(150,210,240,0.2)); } to { filter: drop-shadow(0 0 60px rgba(150,210,240,0.5)); } }
-        .frieren-subtitle { font-style: italic; font-size: 1.1rem; color: var(--text-muted); letter-spacing: 0.3em; font-weight: 300; z-index: 1; text-align: center; }
-        .frieren-quote { font-style: italic; color: #4a6878; font-size: 0.95rem; text-align: center; max-width: 380px; line-height: 1.7; z-index: 1; margin-bottom: 8px; }
-
-        /* THE CROSSROADS - MYSTICAL SIGNPOST UI */
-        .signpost-wrapper {
-            position: relative; display: flex; flex-direction: column; align-items: center; 
-            margin-top: 3rem; z-index: 10; width: 100%;
-        }
-        .signpost-pole {
-            width: 12px; height: 100%; min-height: 220px;
-            background: linear-gradient(90deg, #0a1520, #1e3a50, #0a1520);
-            position: absolute; top: -10px; z-index: 0; border-radius: 6px 6px 0 0;
-            box-shadow: inset -2px 0 5px rgba(0,0,0,0.8), 0 0 15px rgba(100,180,220,0.1);
-            border-left: 1px solid rgba(100, 180, 220, 0.2);
-            border-right: 1px solid rgba(100, 180, 220, 0.2);
-        }
-        .signpost-signs {
-            display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 320px;
-            z-index: 1; position: relative; padding: 20px 0;
-        }
-        .sign-btn {
-            position: relative; width: 100%; 
-            background: linear-gradient(180deg, rgba(20, 32, 48, 0.9), rgba(10, 18, 28, 0.95));
-            border: 1px solid rgba(122, 184, 208, 0.4); 
-            color: #c8e0f0; font-family: 'Cinzel', serif; font-size: 1.05rem;
-            font-weight: 700; letter-spacing: 0.1em; padding: 18px 20px; cursor: pointer;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease, box-shadow 0.3s ease;
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 15px rgba(122, 184, 208, 0.05);
-            backdrop-filter: blur(8px);
-        }
-        .sign-btn::after { 
-            content: ''; position: absolute; width: 8px; height: 8px; 
-            background: #a8c4d8; border-radius: 50%; top: 50%; transform: translateY(-50%); 
-            box-shadow: 0 0 10px #7ab8d0, inset 1px 1px 2px rgba(255,255,255,0.8);
-        }
-        .sign-left {
-            clip-path: polygon(24px 0%, 100% 0%, 100% 100%, 24px 100%, 0% 50%);
-            padding-left: 36px; transform: rotate(-2deg);
-        }
-        .sign-left::after { right: 24px; }
-        .sign-left:hover { transform: rotate(-2deg) scale(1.05); box-shadow: 0 0 25px rgba(122, 184, 208, 0.3); border-color: #a8c4d8; color: #fff;}
-        
-        .sign-right {
-            clip-path: polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%);
-            padding-right: 36px; transform: rotate(2deg);
-        }
-        .sign-right::after { left: 24px; }
-        .sign-right:hover { transform: rotate(2deg) scale(1.05); box-shadow: 0 0 25px rgba(122, 184, 208, 0.3); border-color: #a8c4d8; color: #fff;}
-
-        .landing-card {
-            width: 100%; background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 12px; backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(100,160,200,0.03);
-            padding: 36px; position: relative; z-index: 1; display: none;
-        }
-
-        .back-to-paths {
-            position: absolute; top: -40px; left: 0; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px;
-            font-size: 0.8rem; font-family: 'Cinzel', serif; letter-spacing: 0.1em; text-decoration: none; border: none; background: none;
-        }
-        .back-to-paths:hover { color: var(--accent); }
-
-        .load-row { display: flex; gap: 10px; margin-bottom: 12px; }
-        .input-group { display: flex; gap: 12px; margin-bottom: 12px; }
-
-        /* Mystical Loading Spinner */
-        .loading-wrap { display: none; flex-direction: column; align-items: center; gap: 12px; margin-top: 28px; z-index: 10; }
+        .loading-wrap { position: fixed; inset: 0; z-index: 1000; background: rgba(251,249,244,0.9); backdrop-filter: blur(8px); display: none; flex-direction: column; items-center; justify-content: center; gap: 24px; }
         .loading-wrap.show { display: flex; }
-        .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; box-shadow: 0 0 20px var(--accent-glow); }
+        .spinner { width: 64px; height: 64px; border: 4px solid var(--primary-container); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-msg { font-size: 0.95rem; color: var(--accent); font-family: 'Crimson Pro', serif; font-style: italic; letter-spacing: 0.05em; text-align: center; }
 
-        /* ============================================================
-           APP HEADERS & LAYOUT
-           ============================================================ */
-        .app-header {
-            background: rgba(6, 10, 16, 0.85); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px);
-            position: sticky; top: 0; z-index: 40; display: none;
-        }
-        .header-inner { max-width: 900px; margin: 0 auto; padding: 16px 20px; }
-        .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .header-title { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 900; color: var(--text-title); line-height: 1.2; }
-        .header-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 6px; }
-        .meta-chip { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); font-family: 'DM Sans', sans-serif;}
-        .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
-
-        .app-view-container { max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; display: none; }
-        #ledger-view { max-width: 600px; }
-
-        /* ---- TABS FOR LEDGER & PORTALS ---- */
-        .ledger-tabs { display: flex; gap: 4px; background: var(--bg-input); border-radius: 12px; padding: 4px; border: 1px solid var(--border); overflow-x: auto; }
-        .ledger-tabs::-webkit-scrollbar { display: none; }
-        .tab-btn { flex: 1; text-align: center; padding: 10px 16px; border-radius: 8px; background: transparent; border: none; color: var(--text-muted); font-family: 'Cinzel', serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
-        .tab-btn:hover { color: var(--text-main); }
-        .tab-btn.active { background: var(--bg-card-hover); color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-bottom: 1px solid var(--accent); }
+        /* Crossroads Signpost */
+        .signpost-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 4rem; z-index: 10; width: 100%; }
+        .signpost-pole { width: 16px; height: 100%; min-height: 280px; background: linear-gradient(90deg, #6e6353, #8d7d6a, #504738); position: absolute; top: -10px; z-index: 0; border-radius: 8px; box-shadow: inset -2px 0 5px rgba(0,0,0,0.2), 5px 0 15px rgba(0,0,0,0.1); }
+        .signpost-signs { display: flex; flex-direction: column; gap: 40px; width: 100%; max-width: 380px; z-index: 1; position: relative; padding: 20px 0; }
+        .sign-btn { position: relative; width: 100%; padding: 20px 24px; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Newsreader', serif; font-size: 1.25rem; font-style: italic; box-shadow: 0 10px 25px rgba(0,0,0,0.08); backdrop-filter: blur(8px); }
+        .sign-btn::after { content: ''; position: absolute; width: 10px; height: 10px; background: #5e605a; border-radius: 50%; top: 50%; transform: translateY(-50%); box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5); }
         
-        .tab-content { display: none; animation: slideUp 0.3s ease-out; }
-        .tab-content.active { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* ============================================================
-           PLANNER SPECIFIC STYLES
-           ============================================================ */
-        #filter-nav { display: flex; overflow-x: auto; gap: 8px; margin-top: 14px; padding-bottom: 2px; }
-        #filter-nav::-webkit-scrollbar { display: none; }
-        .filter-btn { padding: 7px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; transition: all 0.2s; background: var(--bg-input); color: var(--text-main); font-family: 'DM Sans', sans-serif; }
-        .filter-btn:hover { background: var(--bg-card); border-color: var(--accent); }
-        .filter-btn.active { background: rgba(100,180,220,0.15); color: #fff; border-color: var(--accent); }
-
-        .section-title { font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: 700; color: var(--text-title); display: flex; align-items: center; gap: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-
-        .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
-        .budget-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; backdrop-filter: blur(8px); }
-        .budget-card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
-        .budget-icon { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 8px; color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .budget-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 2px; font-family: 'Cinzel', serif; }
-        .budget-amount-wrap { display: flex; align-items: center; font-family: 'DM Sans', sans-serif; }
-        .budget-currency { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-right: 2px; }
-        .budget-amount-input { border: none; outline: none; background: transparent; font-size: 1.05rem; font-weight: 700; color: var(--text-main); width: 100%; font-family: 'DM Sans', sans-serif; padding: 0; }
-        .budget-amount-input:focus { color: var(--accent); }
-
-        .expense-summary { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 28px; backdrop-filter: blur(8px); }
-        .expense-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-        .expense-total { font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900; color: var(--text-title); }
-        .expense-currency { font-size: 0.85rem; font-weight: 400; color: var(--text-muted); margin-left: 4px; font-family: 'DM Sans', sans-serif; }
-        .progress-bar-track { background: var(--bg-input); border-radius: 100px; height: 6px; margin: 12px 0; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 0.6s ease; box-shadow: 0 0 10px var(--accent); }
-        .loc-breakdown { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; font-family: 'DM Sans', sans-serif; }
-        .loc-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-        .loc-name { font-weight: 500; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
-        .loc-amount { font-weight: 700; color: var(--text-title); }
+        .sign-left { background: #feefda; color: #504738; border-l-4 border-secondary-dim; clip-path: polygon(24px 0%, 100% 0%, 100% 100%, 24px 100%, 0% 50%); padding-left: 40px; transform: rotate(-2deg); }
+        .sign-left::after { right: 24px; }
+        .sign-left:hover { transform: rotate(-1deg) scale(1.02); background: #fff; color: var(--primary); }
         
-        .zeroise-btn { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; font-family: 'Cinzel', serif; }
-        .zeroise-btn:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); color: var(--danger); }
+        .sign-right { background: var(--primary); color: #fff; border-r-4 border-primary-container; clip-path: polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%); padding-right: 40px; transform: rotate(3deg); }
+        .sign-right::after { left: 24px; }
+        .sign-right:hover { transform: rotate(1deg) scale(1.02); background: var(--primary-dim); }
 
-        .loc-hero { width: 100%; height: 220px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 28px; position: relative; }
-        .loc-hero img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8); }
-        .loc-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(6,10,16,0.9) 0%, transparent 60%); display: flex; align-items: flex-end; padding: 24px; }
-        .loc-hero-name { font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-
-        .day-header { padding: 0 0 16px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-        .day-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; font-family: 'Cinzel', serif;}
-        .day-title { font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 700; color: var(--text-title); }
-        .day-chips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .day-expense-chip { font-size: 0.8rem; font-weight: 600; font-family: 'DM Sans', sans-serif; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; color: var(--text-main); }
-        .map-toggle { font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; cursor: pointer; background: var(--bg-input); color: var(--text-muted); transition: all 0.2s; display: flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; }
-        .map-toggle:hover { background: var(--bg-card-hover); color: var(--accent); border-color: var(--accent); }
-        .map-toggle.open { background: rgba(100,180,220,0.15); color: #fff; border-color: var(--accent); }
+        /* Map Tweaks for Light Mode */
+        .map-container { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; border-radius: 12px; }
+        .map-container.open { max-height: 360px; margin: 16px 0; border: 1px solid var(--outline-variant); }
+        .day-map { height: 300px; width: 100%; border-radius: 12px; z-index: 1; }
         
-        .map-container { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; margin: 0 -24px; }
-        .map-container.open { max-height: 360px; margin-bottom: 16px; margin-top: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        /* CSS Trick: Dark mode Leaflet Maps */
-        .day-map { height: 280px; width: 100%; border-radius: 0; filter: invert(90%) hue-rotate(180deg) brightness(0.85) contrast(1.1); background: #000; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        .events-wrap { padding-top: 20px; font-family: 'DM Sans', sans-serif; }
-        .timeline-rail { border-left: 2px solid var(--border); margin-left: 10px; padding-left: 0; display: flex; flex-direction: column; gap: 24px; }
-        .event-item { position: relative; padding-left: 28px; }
-        .event-dot { position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg-base); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; transition: border-color 0.2s; }
-        .event-dot svg { width: 9px; height: 9px; }
-        .event-row { display: flex; align-items: flex-start; gap: 12px; }
-        .event-time { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); min-width: 64px; padding-top: 3px; white-space: nowrap; }
-        .event-body { flex: 1; }
-        .event-name { font-size: 0.95rem; font-weight: 400; color: var(--text-main); line-height: 1.5; }
-        .event-name a { color: var(--accent); text-decoration: none; }
-        .event-name a:hover { text-decoration: underline; text-shadow: 0 0 8px var(--accent-glow); }
-        .expense-input-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-        .expense-currency-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
-        .expense-field { width: 72px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 0.85rem; text-align: right; outline: none; background: var(--bg-input); color: var(--text-main); font-family: 'DM Sans', sans-serif; font-weight: 600; transition: border-color 0.2s; }
-        .expense-field:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); box-shadow: 0 0 0 2px var(--accent-glow); }
-
-        /* ============================================================
-           LEDGER APP SPECIFIC STYLES
-           ============================================================ */
-        .empty-state-main { text-align: center; padding: 40px 20px; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 12px; margin-bottom: 20px; background: var(--bg-input); font-family: 'DM Sans', sans-serif; }
-        
-        .ledger-ul { list-style-type: none; padding: 0; margin: 0; font-family: 'DM Sans', sans-serif;}
-        .ledger-li { padding: 16px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;}
-        .ledger-li:last-child { border-bottom: none; padding-bottom: 0; }
-        
-        .settlement-amount { font-weight: 600; color: var(--text-main); background: var(--bg-input); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-variant-numeric: tabular-nums;}
-        .settle-action-btn { background-color: rgba(16,185,129,0.1); color: var(--success); border: 1px solid var(--success); padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.2s;}
-        .settle-action-btn:hover { background-color: var(--success); color: #fff; box-shadow: 0 0 15px rgba(16,185,129,0.4); }
-
-        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 20px 0; padding: 16px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border); font-family: 'DM Sans', sans-serif;}
-        .checkbox-group label { display: flex; align-items: center; cursor: pointer; color: var(--text-main); font-weight: 500; font-size: 0.95rem;}
-        .checkbox-group input { width: auto; margin: 0 10px 0 0; accent-color: var(--accent); transform: scale(1.1); }
-
-        .chart-container { position: relative; height: 220px; width: 100%; margin-bottom: 10px; overflow: visible; }
-        @keyframes panicShake { 0% { transform: translate(0, 0); } 25% { transform: translate(var(--shake-intensity), calc(var(--shake-intensity) * -0.5)); } 50% { transform: translate(calc(var(--shake-intensity) * -1), var(--shake-intensity)); } 75% { transform: translate(calc(var(--shake-intensity) * 0.5), calc(var(--shake-intensity) * -1)); } 100% { transform: translate(0, 0); } }
-        .vibrating-chart { animation-name: panicShake; animation-iteration-count: infinite; animation-timing-function: linear; will-change: transform; }
-
-        /* ---- MODALS ---- */
-        .fixed-modal { position: fixed; inset: 0; background: rgba(6,10,16,0.8); z-index: 110; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
+        /* Modals */
+        .fixed-modal { position: fixed; inset: 0; background: rgba(251,249,244,0.8); z-index: 1100; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
         .fixed-modal.show { display: flex; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .modal-card { background: var(--bg-base); width: 100%; max-width: 480px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 20px var(--accent-glow); padding: 28px; position: relative; }
-        .modal-close { position: absolute; top: 16px; right: 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.15s; }
-        .modal-close:hover { border-color: var(--accent); color: var(--accent); }
         
-        .delete-confirm-wrap { display: flex; gap: 8px; }
-        .confirm-yes { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 16px; font-weight: 600; font-size: 0.85rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;}
-        .confirm-yes:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px rgba(239,68,68,0.4); }
-        .confirm-no { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-main); font-family: 'DM Sans', sans-serif; transition: all 0.2s;}
-        .confirm-no:hover { border-color: var(--accent); color: var(--accent); }
-
-        /* ---- PETALS ---- */
-        @keyframes fall { 0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { transform: translate3d(15vw, 110vh, 0) rotate(360deg); opacity: 0; } }
-        .petal { position: absolute; background: linear-gradient(135deg, #a8c4d8, #6a90a8); border-radius: 12px 0 12px 0; animation: fall linear infinite; pointer-events: none; filter: blur(1px); }
-        #blossom-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
-
-        /* ---- RESPONSIVE MOBILE FIXES ---- */
-        @media (max-width: 600px) {
-            .landing-card { padding: 24px 20px; }
-            .header-title { font-size: 1.2rem; }
-            .expense-total { font-size: 1.4rem; }
-            .load-row { flex-direction: column; }
-            .load-row .btn-secondary { width: 100%; padding: 13px; }
-            .budget-grid { grid-template-columns: 1fr; } 
-            .event-row { gap: 8px; }
-            .expense-field { width: 64px; }
-            .frieren-logo { font-size: 2.2rem; }
-            .frieren-quote { font-size: 0.85rem; padding: 0 10px; }
-            .checkbox-group { grid-template-columns: 1fr; }
-        }
+        /* Chart Vibration */
+        @keyframes panicShake { 0% { transform: translate(0, 0); } 25% { transform: translate(var(--shake-intensity), calc(var(--shake-intensity) * -0.5)); } 50% { transform: translate(calc(var(--shake-intensity) * -1), var(--shake-intensity)); } 75% { transform: translate(calc(var(--shake-intensity) * 0.5), calc(var(--shake-intensity) * -1)); } 100% { transform: translate(0, 0); } }
+        .vibrating-chart { animation-name: panicShake; animation-iteration-count: infinite; animation-timing-function: linear; will-change: transform; }
     </style>
 </head>
-<body>
+<body class="watercolor-bg">
+    <div class="grain-texture"></div>
+    <div id="toast-container"></div>
+    <div id="save-indicator"><i data-lucide="cloud"></i><span id="save-indicator-text">Saving...</span></div>
 
-<div id="toast-container"></div>
+    <div class="loading-wrap" id="loading-wrap">
+        <div class="spinner"></div>
+        <p class="font-headline italic text-2xl text-primary" id="loading-message">Waiting for the Enoshima Line...</p>
+    </div>
 
-<div id="save-indicator">
-    <i data-lucide="cloud" style="width:14px;height:14px;"></i>
-    <span id="save-indicator-text">Saving...</span>
-</div>
-
-<div id="blossom-container"></div>
-
-<div id="ai-overlay">
-    <canvas id="title-canvas"></canvas>
-
-    <div class="overlay-scroll-wrapper">
-        <div style="z-index:1; display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-top:10px;">
-            <div class="frieren-rune">✦ ✦ ✦</div>
-            <div class="frieren-logo">Journeys & Ledgers</div>
-            <div class="frieren-subtitle">beyond journey's end</div>
-            <div style="height:1px; width:200px; background:linear-gradient(90deg,transparent,#2a5060,transparent); margin:0.5rem 0;"></div>
-            <p class="frieren-quote">"A thousand years from now, someone will remember this moment."</p>
+    <main id="crossroads-view" class="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-12 pb-24 z-10 transition-opacity duration-1000">
+        <div class="max-w-4xl mx-auto space-y-4">
+            <h2 class="text-on-surface-variant font-label text-sm uppercase tracking-[0.3em] mb-4">Seaside Chronicles</h2>
+            <h1 class="text-5xl md:text-7xl font-headline text-primary tracking-tight leading-none italic">
+                Journeys & Ledgers
+            </h1>
+            <div class="py-6 flex justify-center">
+                <svg class="text-primary-container" fill="none" height="24" viewBox="0 0 200 24" width="200" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 12C25 12 25 2 50 2C75 2 75 12 100 12C125 12 125 22 150 22C175 22 175 12 200 12" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+                </svg>
+            </div>
+            <p class="font-headline italic text-xl text-on-surface-variant max-w-xl mx-auto">"The journey is the destination."</p>
         </div>
 
         <div id="landing-paths-container" class="signpost-wrapper">
             <div class="signpost-pole"></div>
             <div class="signpost-signs">
                 <button class="sign-btn sign-left" onclick="window.showPlannerPortal()">
-                    <i data-lucide="map-pinned" style="width:20px; height:20px; color:#7ab8d0;"></i> The Planner's Grimoire
+                    <i data-lucide="book-open" style="width:24px; height:24px;"></i> The Planner's Grimoire
                 </button>
                 <button class="sign-btn sign-right" onclick="window.showLedgerPortal()">
-                    <i data-lucide="scale" style="width:20px; height:20px; color:#7ab8d0;"></i> The Debt Ledger
+                    The Debt Ledger <i data-lucide="scale" style="width:24px; height:24px;"></i>
                 </button>
             </div>
+            <div class="w-32 h-6 bg-black/5 blur-md rounded-full mx-auto mt-4"></div>
         </div>
 
-        <div id="planner-portal" class="landing-card" style="display: none; margin-top: 1.5rem;">
-            <button class="back-to-paths" onclick="window.backToPaths()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Back</button>
+        <div id="planner-portal" class="w-full max-w-lg mt-12 bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-8 relative hidden z-20">
+            <button onclick="window.backToPaths()" class="absolute top-4 left-4 text-on-surface-variant hover:text-primary flex items-center gap-1 font-label text-sm font-bold"><i data-lucide="arrow-left" style="width:16px;"></i> Back</button>
+            <h3 class="font-headline italic text-3xl text-primary mb-6 text-center mt-4">The Planner</h3>
+            <div class="flex justify-center mb-6 bg-surface-container-low p-1.5 rounded-full w-fit mx-auto">
+                <button id="ptab-load" class="px-6 py-2 rounded-full font-label font-bold text-sm bg-primary text-white shadow-sm" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
+                <button id="ptab-new" class="px-6 py-2 rounded-full font-label font-bold text-sm text-on-surface-variant hover:bg-surface-container-high" onclick="window.switchPortalTab('planner', 'new')">Start New</button>
+            </div>
             
-            <div class="ledger-tabs" style="margin-bottom: 24px;">
-                <button class="tab-btn active" id="ptab-load" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
-                <button class="tab-btn" id="ptab-new" onclick="window.switchPortalTab('planner', 'new')">Start New</button>
+            <div id="planner-sec-load" class="space-y-4">
+                <label class="block font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant pl-1 text-left">Select Archive</label>
+                <select id="saved-trips-dropdown" class="select-input bg-surface-container-high border-none rounded-xl h-14 px-4 font-headline text-lg" disabled>
+                    <option value="">Waiting for trains...</option>
+                </select>
+                <button id="load-btn" onclick="window.loadPastTrip()" class="btn-primary w-full h-14 text-lg" disabled>OPEN</button>
             </div>
 
-            <div id="planner-sec-load" class="tab-content active">
-                <p class="field-label">Saved Trips</p>
-                <div class="load-row">
-                    <select id="saved-trips-dropdown" class="select-input" disabled>
-                        <option value="">Fetching past memories…</option>
-                    </select>
-                    <button id="load-btn" onclick="window.loadPastTrip()" class="btn-secondary" disabled>
-                        <i data-lucide="book-open" style="width:15px;height:15px;"></i> OPEN
-                    </button>
-                </div>
-                <div id="trips-status" style="margin-top:6px;"></div>
-            </div>
-
-            <div id="planner-sec-new" class="tab-content">
-                <p class="field-label">Start New Journey</p>
-                <form id="newPlannerForm" onsubmit="window.createPlannerTrip(event)">
-                    <input type="text" id="newTripTitle" placeholder="Journey Name (e.g., Hong Kong, Macau & Guangzhou)" required autocomplete="off" class="field-input">
-                    <input type="text" id="newTripDates" placeholder="Period (e.g., Dec 20 - Dec 26)" required autocomplete="off" class="field-input">
-                    <button type="submit" class="btn-primary" style="margin-bottom:0;">Scribe New Grimoire</button>
+            <div id="planner-sec-new" class="space-y-4 hidden">
+                <label class="block font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant pl-1 text-left">New Journey</label>
+                <form id="newPlannerForm" onsubmit="window.createPlannerTrip(event)" class="space-y-4">
+                    <input type="text" id="newTripTitle" placeholder="Trip Title (e.g. Shonan Getaway)" required class="field-input bg-surface-container-high border-none rounded-xl h-14 px-4">
+                    <input type="text" id="newTripDates" placeholder="Dates (e.g. Oct 12 - 16)" required class="field-input bg-surface-container-high border-none rounded-xl h-14 px-4">
+                    <button type="submit" class="btn-primary w-full h-14 text-lg">Inscribe New</button>
                 </form>
             </div>
         </div>
 
-        <div id="ledger-portal" class="landing-card" style="display: none; margin-top: 1.5rem;">
-            <button class="back-to-paths" onclick="window.backToPaths()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Back</button>
+        <div id="ledger-portal" class="w-full max-w-lg mt-12 bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-8 relative hidden z-20">
+            <button onclick="window.backToPaths()" class="absolute top-4 left-4 text-on-surface-variant hover:text-primary flex items-center gap-1 font-label text-sm font-bold"><i data-lucide="arrow-left" style="width:16px;"></i> Back</button>
+            <h3 class="font-headline italic text-3xl text-primary mb-6 text-center mt-4">The Ledger</h3>
+            <div class="flex justify-center mb-6 bg-surface-container-low p-1.5 rounded-full w-fit mx-auto">
+                <button id="ltab-load" class="px-6 py-2 rounded-full font-label font-bold text-sm bg-primary text-white shadow-sm" onclick="window.switchPortalTab('ledger', 'load')">Open Ledger</button>
+                <button id="ltab-new" class="px-6 py-2 rounded-full font-label font-bold text-sm text-on-surface-variant hover:bg-surface-container-high" onclick="window.switchPortalTab('ledger', 'new')">Start New</button>
+            </div>
             
-            <div class="ledger-tabs" style="margin-bottom: 24px;">
-                <button class="tab-btn active" id="ltab-load" onclick="window.switchPortalTab('ledger', 'load')">Open Ledger</button>
-                <button class="tab-btn" id="ltab-new" onclick="window.switchPortalTab('ledger', 'new')">Start New</button>
+            <div id="ledger-sec-load">
+                <div id="ledgerLoadingMsg" class="text-sm font-headline italic text-on-surface-variant mb-4">Fetching ledgers...</div>
+                <div id="ledgerList" class="flex flex-col gap-3"></div>
             </div>
 
-            <div id="ledger-sec-load" class="tab-content active">
-                <div id="ledgerLoadingMsg" style="color:var(--text-muted); font-size:0.85rem; font-style:italic; font-family:'Crimson Pro',serif;">Fetching ledgers...</div>
-                <div id="ledgerList" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-
-            <div id="ledger-sec-new" class="tab-content">
-                <p class="field-label">Start New Ledger</p>
-                <form id="newLedgerForm" onsubmit="window.createLedger(event)">
-                    <input type="text" id="ledgerName" placeholder="Trip Name (e.g., Bali 2026)" required autocomplete="off" class="field-input">
-                    <div class="input-group">
-                        <select id="ledgerCurrency" class="select-input" required>
+            <div id="ledger-sec-new" class="hidden">
+                <form id="newLedgerForm" onsubmit="window.createLedger(event)" class="space-y-4">
+                    <input type="text" id="ledgerName" placeholder="Trip Name (e.g., Kamakura Trip)" required class="field-input bg-surface-container-high border-none rounded-xl h-14 px-4">
+                    <div class="flex gap-2">
+                        <select id="ledgerCurrency" class="select-input bg-surface-container-high border-none rounded-xl h-14 px-4 w-1/3" required>
+                            <option value="¥">JPY (¥)</option>
                             <option value="S$">SGD (S$)</option>
                             <option value="$">USD ($)</option>
                             <option value="HK$">HKD (HK$)</option>
-                            <option value="MOP$">MOP (MOP$)</option>
-                            <option value="¥">CNY (¥)</option>
                             <option value="€">EUR (€)</option>
                             <option value="£">GBP (£)</option>
-                            <option value="¥">JPY (¥)</option>
                             <option value="RM">MYR (RM)</option>
                             <option value="฿">THB (฿)</option>
                         </select>
-                        <button type="submit" class="btn-primary" style="margin-bottom:0;">Create Ledger</button>
+                        <button type="submit" class="btn-primary flex-1 h-14 text-lg">Create Ledger</button>
                     </div>
                 </form>
             </div>
         </div>
+    </main>
 
-        <div class="loading-wrap" id="loading-wrap">
-            <div class="spinner"></div>
-            <p class="loading-msg" id="loading-message">Consulting the grimoires…</p>
+    <header id="app-header" class="hidden fixed top-0 left-0 right-0 h-20 px-6 md:px-12 z-40 flex justify-between items-center bg-[#fbf9f4]/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(49,51,46,0.05)]">
+        <div class="flex items-center gap-4">
+            <button onclick="window.softReset()" class="text-on-surface-variant hover:text-primary transition-colors flex items-center">
+                <i data-lucide="arrow-left" style="width:24px;"></i>
+            </button>
+            <div class="flex flex-col" id="app-header-left">
+                </div>
         </div>
-    </div>
-</div>
-
-<header id="main-header" class="app-header">
-    <div class="header-inner">
-        <div class="header-top">
-            <div>
-                <div class="header-title" id="header-title" contenteditable="true" onblur="window.updatePlannerTitle(this.innerText)"></div>
-                <div class="header-meta" id="header-meta"></div>
+        <div class="flex items-center gap-4 border-l border-outline-variant/30 pl-4 ml-4" id="app-header-right">
             </div>
-            <div class="header-actions">
-                <button onclick="window.copyPlannerLink()" class="icon-btn">
-                    <i data-lucide="link" style="width:14px;height:14px;"></i>
-                </button>
-                <button onclick="window.openDeleteModal()" class="icon-btn danger">
-                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-                </button>
-                <button onclick="window.softReset()" class="icon-btn">
-                    <i data-lucide="log-out" style="width:14px;height:14px;"></i>
-                </button>
-            </div>
-        </div>
-        <div id="filter-nav"></div>
-    </div>
-</header>
-<main id="planner-content" class="app-view-container"></main>
+    </header>
 
-<header id="ledger-header" class="app-header">
-    <div class="header-inner" style="max-width: 600px;">
-        <div class="header-top" style="align-items: center;">
-            <div class="header-title" id="ledger-header-title">Ledger</div>
-            <div class="header-actions">
-                <button onclick="window.copyLedgerLink()" class="icon-btn">
-                    <i data-lucide="link" style="width:14px;height:14px;"></i>
-                </button>
-                <button onclick="window.deleteLedger()" class="icon-btn danger">
-                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-                </button>
-                <button onclick="window.softReset()" class="icon-btn">
-                    <i data-lucide="log-out" style="width:14px;height:14px;"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-</header>
+    <main id="planner-view" class="hidden pt-28 px-4 md:px-12 max-w-5xl mx-auto space-y-12 pb-24 z-10 relative">
+        <nav id="filter-nav" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar"></nav>
+        <div id="planner-content" class="space-y-12"></div>
+    </main>
 
-<main id="ledger-view" class="app-view-container">
-    <div class="ledger-tabs" style="margin-bottom: 24px;">
-        <button class="tab-btn active" id="tabbtn-dash" onclick="window.switchLedgerTab('dash')">Overview</button>
-        <button class="tab-btn" id="tabbtn-party" onclick="window.switchLedgerTab('party')">Party</button>
-        <button class="tab-btn" id="tabbtn-ledger" onclick="window.switchLedgerTab('ledger')">Ledger</button>
-        <button class="tab-btn" id="tabbtn-settle" onclick="window.switchLedgerTab('settle')">Settle</button>
-    </div>
+    <main id="ledger-view" class="hidden pt-28 px-4 md:px-12 max-w-[600px] mx-auto space-y-8 pb-24 z-10 relative">
+        <nav class="flex w-full justify-between items-end border-b border-outline-variant/30">
+            <button id="tabbtn-dash" class="px-2 py-3 text-sm font-bold text-primary border-b-2 border-primary" onclick="window.switchLedgerTab('dash')">Overview</button>
+            <button id="tabbtn-party" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary" onclick="window.switchLedgerTab('party')">Party</button>
+            <button id="tabbtn-ledger" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary" onclick="window.switchLedgerTab('ledger')">Ledger</button>
+            <button id="tabbtn-settle" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary" onclick="window.switchLedgerTab('settle')">Settle</button>
+        </nav>
 
-    <div id="tab-dash" class="tab-content active">
-        <div class="glass-card" style="margin-bottom: 20px;">
-            <div class="field-label">Total Unpaid Debt</div>
-            <div class="chart-container" id="chartWrapper">
-                <canvas id="debtChart"></canvas>
-            </div>
-        </div>
-        <div class="glass-card">
-            <h2 class="section-title">Trip Summary</h2>
-            <div class="field-label">Total Spent</div>
-            <div id="totalSpentDisplay" class="expense-total" style="margin-bottom:20px; font-family:'DM Sans', sans-serif;">0.00</div>
-            <div class="field-label">By Category</div>
-            <div id="categorySummary"></div>
-            <div class="field-label" style="margin-top: 30px;">Who spent what?</div>
-            <div id="personSummary"></div>
-        </div>
-    </div>
+        <div id="tab-dash" class="block space-y-8">
+            <section class="space-y-2">
+                <p class="text-xs font-label uppercase tracking-widest text-on-surface-variant opacity-70">Total Collective Spending</p>
+                <div class="flex items-baseline gap-2">
+                    <span id="totalSpentDisplay" class="text-5xl font-headline font-extrabold text-primary">0.00</span>
+                </div>
+            </section>
+            
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/20 relative overflow-hidden group">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="font-headline text-lg font-bold text-on-surface">Spending Velocity</h3>
+                        <p class="text-xs text-on-surface-variant font-label">Accumulation over time</p>
+                    </div>
+                </div>
+                <div class="h-48 w-full relative chart-container" id="chartWrapper">
+                    <canvas id="debtChart"></canvas>
+                </div>
+            </section>
 
-    <div id="tab-party" class="tab-content">
-        <div class="glass-card">
-            <h2 class="section-title">Who's in?</h2>
-            <form id="addUserForm" class="input-group" style="margin-bottom: 10px;" onsubmit="window.addUser(event)">
-                <input type="text" id="userName" class="field-input" placeholder="Enter name" required autocomplete="off" style="flex: 2; margin-bottom:0;">
-                <button type="submit" class="btn-primary" style="flex: 1; margin-bottom:0;">Add</button>
+            <section class="space-y-6">
+                <header class="flex items-center gap-2">
+                    <div class="w-1 h-5 bg-secondary-container"></div>
+                    <h3 class="font-headline text-xl font-bold italic text-on-surface">By Category</h3>
+                </header>
+                <div id="categorySummary" class="space-y-4"></div>
+            </section>
+
+            <section class="space-y-6">
+                <header class="flex items-center gap-2">
+                    <div class="w-1 h-5 bg-tertiary-container"></div>
+                    <h3 class="font-headline text-xl font-bold italic text-on-surface">Who spent what?</h3>
+                </header>
+                <div id="personSummary" class="grid grid-cols-1 gap-4"></div>
+            </section>
+        </div>
+
+        <div id="tab-party" class="hidden space-y-6">
+            <header class="flex items-center gap-2">
+                <div class="w-1 h-5 bg-primary-container"></div>
+                <h3 class="font-headline text-xl font-bold italic text-on-surface">Travel Party</h3>
+            </header>
+            <form id="addUserForm" class="flex gap-2" onsubmit="window.addUser(event)">
+                <input type="text" id="userName" class="field-input flex-1 bg-white border border-outline-variant/30 rounded-lg h-12 px-4" placeholder="Enter name" required>
+                <button type="submit" class="btn-primary h-12 px-6">Add</button>
             </form>
-            <ul id="userList" class="ledger-ul"></ul>
+            <ul id="userList" class="space-y-2"></ul>
+        </div>
+
+        <div id="tab-ledger" class="hidden space-y-8">
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/20">
+                <h3 class="font-headline text-xl font-bold italic text-on-surface mb-4" id="expenseFormTitle">Add Expense</h3>
+                <form id="addExpenseForm" class="space-y-4" onsubmit="window.saveExpense(event)">
+                    <select id="expenseCategory" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full" required>
+                        <option value="" disabled selected>-- Category --</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Accommodation">Accommodation</option>
+                        <option value="Food & Drinks">Food & Drinks</option>
+                        <option value="Activities">Activities</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Settlement">Settlement (Transfer)</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="text" id="expenseDesc" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full" placeholder="What was it for?" required>
+                    <input type="number" id="expenseAmount" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full font-serif text-xl" placeholder="Amount" step="0.01" required>
+                    
+                    <p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest pt-2">Who paid?</p>
+                    <select id="expensePayer" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full" required></select>
+                    
+                    <p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest pt-2">Who splits it?</p>
+                    <div id="involvedUsersContainer" class="grid grid-cols-2 gap-3 p-4 bg-surface-container-low rounded-lg"></div>
+                    
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" id="submitExpenseBtn" class="btn-primary flex-1">Save</button>
+                        <button type="button" class="btn-secondary flex-1" id="cancelEditBtn" style="display:none;" onclick="window.cancelEdit()">Cancel</button>
+                    </div>
+                </form>
+            </section>
+            <section>
+                <h3 class="font-headline text-xl font-bold italic text-on-surface mb-4">History</h3>
+                <ul id="expenseLogList" class="space-y-3"></ul>
+            </section>
+        </div>
+
+        <div id="tab-settle" class="hidden space-y-6">
+            <header class="flex items-center gap-2">
+                <div class="w-1 h-5 bg-success"></div>
+                <h3 class="font-headline text-xl font-bold italic text-on-surface">Settle Up</h3>
+            </header>
+            <ul id="settlementList" class="space-y-4"></ul>
+            <button id="copySettlementsBtn" class="btn-secondary w-full" style="display:none;" onclick="window.copySettlements()"><i data-lucide="copy" style="width:16px;"></i> Copy for Line/WhatsApp</button>
+        </div>
+    </main>
+
+    <div id="delete-modal" class="fixed-modal">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl border border-outline-variant/20">
+            <h3 class="font-headline text-2xl font-bold text-error mb-2">Erase Journey?</h3>
+            <p id="delete-modal-msg" class="text-on-surface-variant mb-6 text-sm"></p>
+            <div class="flex gap-3 justify-center">
+                <button class="btn-secondary" onclick="window.closeDeleteModal()">Cancel</button>
+                <button class="btn-primary bg-error hover:bg-error-container" onclick="window.confirmDeletePlanner()">Erase Forever</button>
+            </div>
         </div>
     </div>
-
-    <div id="tab-ledger" class="tab-content">
-        <div class="glass-card" id="expenseSection" style="margin-bottom: 20px;">
-            <h2 class="section-title" id="expenseFormTitle">Add an Expense</h2>
-            <form id="addExpenseForm" onsubmit="window.saveExpense(event)">
-                <select id="expenseCategory" class="select-input" required>
-                    <option value="" disabled selected>-- Choose Category --</option>
-                    <option value="Transport">Transport</option>
-                    <option value="Accommodation">Accommodation</option>
-                    <option value="Food & Drinks">Food & Drinks</option>
-                    <option value="Activities">Activities</option>
-                    <option value="Shopping">Shopping</option>
-                    <option value="Settlement">User paid User (Settlement)</option>
-                    <option value="Other">Other</option>
-                </select>
-                <input type="text" id="expenseDesc" class="field-input" placeholder="What was it for?" required autocomplete="off">
-                <input type="number" id="expenseAmount" class="field-input" placeholder="Amount" step="0.01" required>
-                <p style="margin: 15px 0 8px 0; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Who paid for it?</p>
-                <select id="expensePayer" class="select-input" required></select>
-                <p style="margin: 15px 0 8px 0; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Who's splitting it?</p>
-                <div id="involvedUsersContainer" class="checkbox-group"></div>
-                <button type="submit" id="submitExpenseBtn" class="btn-primary">Save Expense</button>
-                <button type="button" class="btn-secondary" id="cancelEditBtn" style="display:none; width: 100%;" onclick="window.cancelEdit()">Cancel Edit</button>
-            </form>
-        </div>
-        <div class="glass-card">
-            <h2 class="section-title">Expense History</h2>
-            <ul id="expenseLogList" class="ledger-ul"></ul>
-        </div>
-    </div>
-
-    <div id="tab-settle" class="tab-content">
-        <div class="glass-card">
-            <h2 class="section-title">Settle Up</h2>
-            <ul id="settlementList" class="ledger-ul"></ul>
-            <button id="copySettlementsBtn" class="btn-primary" style="display:none; margin-top: 20px;" onclick="window.copySettlements()">Copy for Group Chat</button>
-        </div>
-    </div>
-</main>
-
-
-<div id="delete-modal" class="fixed-modal">
-    <div class="modal-card" style="max-width:360px; text-align: center;">
-        <div class="modal-title" style="margin-bottom:8px;">Erase Journey?</div>
-        <p id="delete-modal-msg" style="font-size:0.9rem;color:var(--text-muted);margin-bottom:24px; font-family: 'DM Sans', sans-serif;"></p>
-        <div class="delete-confirm-wrap" style="justify-content: center;">
-            <button class="confirm-no" onclick="window.closeDeleteModal()">Cancel</button>
-            <button class="confirm-yes" onclick="window.confirmDeletePlanner()">Erase Forever</button>
-        </div>
-    </div>
-</div>
 
 <script type="module">
-// Import Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 // Initialize Firebase
@@ -647,40 +406,28 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6LdjNqEsAAAAAEI2m37oYKa3iluG5Mbx_Ge3VImh'),
-  isTokenAutoRefreshEnabled: true
-});
-    
+const appCheck = initializeAppCheck(app, { provider: new ReCaptchaV3Provider('6LdjNqEsAAAAAEI2m37oYKa3iluG5Mbx_Ge3VImh'), isTokenAutoRefreshEnabled: true });
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// DEFAULT SEED DATA
-const eastAsiaDefaultData = {
-    overview: { title: "East Asia Spring Escape", dates: "April 14 - April 24, 2026", pax: "2" },
+// Default Seed Data (Adapted for Kamakura)
+const kamakuraDefaultData = {
+    overview: { title: "Shonan Getaway", dates: "Oct 12 - Oct 16, 2026", pax: "2" },
     budget: [
-        { item: "Flights (SG <> JP/KR + Inter-city)", amount: 1098, icon: "plane-takeoff" },
-        { item: "Tokyo: Dai-ichi Hotel (5 Nights)", amount: 1055, icon: "bed-double" },
-        { item: "Jeju: Airbnb (3 Nights)", amount: 482, icon: "palmtree" },
-        { item: "Seoul: Mercure Hongdae (2 Nights)", amount: 281, icon: "bed-double" }
+        { item: "Flights (HND)", amount: 65000, icon: "plane" },
+        { item: "Kamakura Prince Hotel", amount: 45000, icon: "building" },
+        { item: "Enoden Pass", amount: 2000, icon: "ticket" }
     ],
     locations: [
-        { id: 'tokyo', name: 'Tokyo', color: 'pink', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1000&q=80' },
-        { id: 'jeju', name: 'Jeju Island', color: 'orange', image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=1000&q=80' },
-        { id: 'seoul', name: 'Seoul', color: 'purple', image: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1000&q=80' }
+        { id: 'kamakura', name: 'Kamakura', color: 'primary', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1000&q=80' },
+        { id: 'enoshima', name: 'Enoshima', color: 'tertiary', image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=1000&q=80' }
     ],
     itinerary: [
         {
-            day: 1, date: "Apr 14 (Tue)", location: "tokyo", title: "Arrival in Japan",
+            day: 1, date: "Oct 12", location: "kamakura", title: "Arrival & Coastline",
             events: [
-                { time: "1:55 PM", desc: "Depart Singapore <span class=\"block text-sm font-normal text-slate-500 mt-1\">Ensure you have your Visit Japan Web QR codes ready for swift immigration.</span>", icon: "plane-takeoff", expense: 0 },
-                { time: "9:55 PM", desc: "Arrive at Tokyo Haneda Airport <span class=\"block text-sm font-normal text-slate-500 mt-1\">Navigate to the Tokyo Monorail or Keikyu Line for transit into the city.</span>", icon: "plane-landing", link: "https://www.google.com/maps/search/?api=1&query=Haneda+Airport", latlng: [35.5494, 139.7798], expense: 0 }
-            ]
-        },
-        {
-            day: 2, date: "Apr 15 (Wed)", location: "tokyo", title: "Coffee & Ginza",
-            events: [
-                { time: "11:00 AM", desc: "Coffee Omakase @ Koffee Mameya Kakeru", icon: "coffee", latlng: [35.6615, 139.7106], expense: 0 }
+                { time: "10:00 AM", desc: "Arrival at Kamakura Station", icon: "train", expense: 0 },
+                { time: "12:00 PM", desc: "Slam Dunk Crossing Photoshoot <span class=\"block text-xs font-normal text-on-surface-variant mt-1\">Expect crowds.</span>", icon: "camera", latlng: [35.3066, 139.5019], expense: 3000 }
             ]
         }
     ]
@@ -689,19 +436,17 @@ const eastAsiaDefaultData = {
 // ============================================================
 //  SHARED STATE & UTILS
 // ============================================================
-let particlesActive = true;
-
 window.showToast = function(message, type = 'info', duration = 3500) {
     const container = document.getElementById('toast-container');
-    const icons = { success: 'check-circle', error: 'x-circle', info: 'info', warning: 'alert-triangle' };
+    const icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:14px;height:14px;flex-shrink:0;"></i> ${DOMPurify.sanitize(message)}`;
+    toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" style="width:18px;"></i> <span>${DOMPurify.sanitize(message)}</span>`;
     container.appendChild(toast);
     lucide.createIcons({ nodes: [toast] });
     setTimeout(() => {
-        toast.style.animation = 'toastOut 0.3s ease forwards';
-        setTimeout(() => toast.remove(), 300);
+        toast.style.animation = 'toastIn 0.4s reverse forwards';
+        setTimeout(() => toast.remove(), 400);
     }, duration);
 }
 
@@ -709,104 +454,75 @@ window.showSaveIndicator = function(state = 'saving') {
     const el = document.getElementById('save-indicator');
     const txt = document.getElementById('save-indicator-text');
     el.classList.remove('error');
-    if (state === 'saving') { txt.textContent = 'Saving…'; el.classList.add('show'); } 
-    else if (state === 'saved') { txt.textContent = 'Saved'; setTimeout(() => el.classList.remove('show'), 1800); } 
-    else if (state === 'error') { el.classList.add('error'); txt.textContent = 'Save failed'; setTimeout(() => el.classList.remove('show'), 3000); }
+    if (state === 'saving') { txt.textContent = 'Saving...'; el.classList.add('show'); } 
+    else if (state === 'saved') { txt.textContent = 'Saved'; setTimeout(() => el.classList.remove('show'), 1500); } 
+    else if (state === 'error') { el.classList.add('error'); txt.textContent = 'Failed'; setTimeout(() => el.classList.remove('show'), 3000); }
 }
 
-window.sanitizeText = function(str) {
-    if (!str) return '';
-    return DOMPurify.sanitize(String(str), { ALLOWED_TAGS: [] }); 
-}
-
+window.sanitizeText = function(str) { return str ? DOMPurify.sanitize(String(str), { ALLOWED_TAGS: [] }) : ''; }
 window.sanitizeURL = function(url) {
     if (!url) return null;
     try { const u = new URL(url); if (u.protocol === 'http:' || u.protocol === 'https:') return url; } catch (_) {}
     return null;
 }
 
-window.showLoading = function(msg) {
-    document.getElementById('loading-wrap').classList.add('show');
-    document.getElementById('loading-message').textContent = msg;
-}
-window.hideLoading = function() {
-    document.getElementById('loading-wrap').classList.remove('show');
-}
+window.showLoading = function(msg) { document.getElementById('loading-wrap').classList.add('show'); document.getElementById('loading-message').textContent = msg; }
+window.hideLoading = function() { document.getElementById('loading-wrap').classList.remove('show'); }
 
-// ---- PORTAL TAB NAVIGATION SYSTEM ----
+// ---- TAB NAVIGATION ----
 window.switchPortalTab = function(portalType, section) {
     const pfix = portalType === 'planner' ? 'ptab' : 'ltab';
     const sfix = portalType === 'planner' ? 'planner-sec' : 'ledger-sec';
-
-    const safeRemove = (id) => { const el = document.getElementById(id); if (el) el.classList.remove('active'); };
-    const safeAdd = (id) => { const el = document.getElementById(id); if (el) el.classList.add('active'); };
-
-    safeRemove(`${pfix}-load`);
-    safeRemove(`${pfix}-new`);
-    safeAdd(`${pfix}-${section}`);
-
-    safeRemove(`${sfix}-load`);
-    safeRemove(`${sfix}-new`);
-    safeAdd(`${sfix}-${section}`);
+    
+    ['load', 'new'].forEach(s => {
+        const btn = document.getElementById(`${pfix}-${s}`);
+        const sec = document.getElementById(`${sfix}-${s}`);
+        if(btn) {
+            if(s === section) {
+                btn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high');
+                btn.classList.add('bg-primary', 'text-white', 'shadow-sm');
+                sec.classList.remove('hidden');
+            } else {
+                btn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-high');
+                btn.classList.remove('bg-primary', 'text-white', 'shadow-sm');
+                sec.classList.add('hidden');
+            }
+        }
+    });
 }
 
 // ============================================================
 //  LANDING PAGE ROUTING
 // ============================================================
-window.showPlannerPortal = function() {
-    document.getElementById('landing-paths-container').style.display = 'none';
-    document.getElementById('planner-portal').style.display = 'block';
-}
-
-window.showLedgerPortal = function() {
-    document.getElementById('landing-paths-container').style.display = 'none';
-    document.getElementById('ledger-portal').style.display = 'block';
-}
-
-window.backToPaths = function() {
-    document.getElementById('planner-portal').style.display = 'none';
-    document.getElementById('ledger-portal').style.display = 'none';
-    document.getElementById('landing-paths-container').style.display = 'flex';
-}
+window.showPlannerPortal = function() { document.getElementById('landing-paths-container').classList.add('hidden'); document.getElementById('planner-portal').classList.remove('hidden'); }
+window.showLedgerPortal = function() { document.getElementById('landing-paths-container').classList.add('hidden'); document.getElementById('ledger-portal').classList.remove('hidden'); }
+window.backToPaths = function() { document.getElementById('planner-portal').classList.add('hidden'); document.getElementById('ledger-portal').classList.add('hidden'); document.getElementById('landing-paths-container').classList.remove('hidden'); }
 
 window.hideOverlay = function() {
-    particlesActive = false;
-    const overlay = document.getElementById('ai-overlay');
+    const overlay = document.getElementById('crossroads-view');
     overlay.style.opacity = '0';
-    setTimeout(() => { overlay.style.display = 'none'; }, 1500);
+    setTimeout(() => { overlay.style.display = 'none'; }, 1000);
 }
 
 window.softReset = function() {
     window.tripData = null; window.activeFilter = 'all';
-    Object.values(window.mapInstances).forEach(m => { try { m.remove(); } catch(_){} });
-    window.mapInstances = {}; window.openMaps.clear();
-    document.getElementById('planner-content').style.display = 'none';
-    document.getElementById('planner-content').innerHTML = '';
-    document.getElementById('main-header').style.display = 'none';
-
+    Object.values(window.mapInstances || {}).forEach(m => { try { m.remove(); } catch(_){} });
+    window.mapInstances = {}; window.openMaps = new Set();
+    
+    document.getElementById('planner-view').classList.add('hidden');
+    document.getElementById('ledger-view').classList.add('hidden');
+    document.getElementById('app-header').classList.add('hidden');
     window.activeLedgerId = null;
-    document.getElementById('ledger-view').style.display = 'none';
-    document.getElementById('ledger-header').style.display = 'none';
 
-    const url = new URL(window.location);
-    url.searchParams.delete('planner');
-    url.searchParams.delete('ledger');
-    window.history.pushState({}, '', url);
+    const url = new URL(window.location); url.searchParams.delete('planner'); url.searchParams.delete('ledger'); window.history.pushState({}, '', url);
 
-    const overlay = document.getElementById('ai-overlay');
+    const overlay = document.getElementById('crossroads-view');
     overlay.style.display = 'flex';
     window.backToPaths();
-    setTimeout(() => {
-        overlay.style.opacity = '1';
-        particlesActive = true;
-        window.initTitleParticles();
-    }, 10);
+    setTimeout(() => { overlay.style.opacity = '1'; }, 50);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons();
-    window.initTitleParticles();
-});
+document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
 
 // ============================================================
 //  FIREBASE AUTH & INITIALIZATION
@@ -818,21 +534,12 @@ onAuthStateChanged(auth, user => {
         window.fetchPlannerTrips().then(() => {
             window.fetchLedgerTrips().then(() => {
                 const params = new URLSearchParams(window.location.search);
-                const pTrip = params.get('planner');
-                const lTrip = params.get('ledger');
-
-                if (pTrip) {
-                    document.getElementById('landing-paths-container').style.display = 'none';
-                    document.getElementById('planner-portal').style.display = 'block';
-                    window.loadPastTrip(pTrip); 
-                } else if (lTrip) {
-                    document.getElementById('landing-paths-container').style.display = 'none';
-                    document.getElementById('ledger-portal').style.display = 'block';
-                    if(window.ledgerTrips.some(t => t.id === lTrip)) {
-                        window.openLedger(lTrip);
-                    } else {
-                        window.showToast("Ledger not found.", "error");
-                    }
+                const pTrip = params.get('planner'); const lTrip = params.get('ledger');
+                if (pTrip) { window.showPlannerPortal(); window.loadPastTrip(pTrip); } 
+                else if (lTrip) {
+                    window.showLedgerPortal();
+                    if(window.ledgerTrips.some(t => t.id === lTrip)) { window.openLedger(lTrip); } 
+                    else { window.showToast("Ledger not found.", "error"); }
                 }
             });
         });
@@ -841,7 +548,7 @@ onAuthStateChanged(auth, user => {
 
 
 // ============================================================
-//  APP 1: PLANNER LOGIC (FIRESTORE)
+//  APP 1: PLANNER LOGIC
 // ============================================================
 window.tripData = null;
 window.activeFilter = 'all';
@@ -850,17 +557,12 @@ window.mapInstances = {};
 window.saveTimeout = null;
 
 const themeStyles = {
-    amber: { dot: '#d97706', label: '#92400e', mapMarker: '#d97706' },
-    teal: { dot: '#0d9488', label: '#115e59', mapMarker: '#0d9488' },
-    rose: { dot: '#e11d48', label: '#9f1239', mapMarker: '#e11d48' },
-    violet: { dot: '#7c3aed', label: '#4c1d95', mapMarker: '#7c3aed' },
-    sky: { dot: '#0284c7', label: '#0c4a6e', mapMarker: '#0284c7' },
-    emerald: { dot: '#059669', label: '#064e3b', mapMarker: '#059669' },
-    pink: { dot: '#db2777', label: '#831843', mapMarker: '#db2777' },
-    orange: { dot: '#ea580c', label: '#7c2d12', mapMarker: '#ea580c' },
-    purple: { dot: '#9333ea', label: '#581c87', mapMarker: '#9333ea' },
+    primary: { dot: '#256296', border: 'border-primary', bg: 'bg-primary/10' },
+    tertiary: { dot: '#426659', border: 'border-tertiary', bg: 'bg-tertiary/10' },
+    secondary: { dot: '#685e4e', border: 'border-secondary-dim', bg: 'bg-secondary-dim/10' },
+    error: { dot: '#ac3434', border: 'border-error', bg: 'bg-error/10' }
 };
-window.getTheme = function(colorKey) { return themeStyles[colorKey] || themeStyles.amber; }
+window.getTheme = function(colorKey) { return themeStyles[colorKey] || themeStyles.primary; }
 
 window.fetchPlannerTrips = async function() {
     const dropdown = document.getElementById('saved-trips-dropdown');
@@ -870,101 +572,62 @@ window.fetchPlannerTrips = async function() {
         const trips = [];
         snapshot.forEach(doc => { trips.push({ id: doc.id, ...doc.data() }); });
         
-        // Seed default trip if completely empty
         if (trips.length === 0) {
             const newDocRef = doc(collection(db, "planner_trips"));
-            const seededTrip = { ...eastAsiaDefaultData, id: newDocRef.id };
+            const seededTrip = { ...kamakuraDefaultData, id: newDocRef.id };
             await setDoc(newDocRef, seededTrip);
             trips.push(seededTrip);
         }
 
         dropdown.innerHTML = trips.map(t => `<option value="${t.id}">${window.sanitizeText(t.overview?.title || 'Unknown')}</option>`).join('');
         dropdown.disabled = false; document.getElementById('load-btn').disabled = false;
-        
-    } catch (err) {
-        console.error("Fetch Planner Error:", err);
-        dropdown.innerHTML = '<option value="">Could not consult records</option>';
-    }
+    } catch (err) { console.error(err); dropdown.innerHTML = '<option value="">Network error</option>'; }
 }
 
 window.createPlannerTrip = async function(e) {
     e.preventDefault();
     const title = document.getElementById('newTripTitle').value.trim();
     const dates = document.getElementById('newTripDates').value.trim();
-    
-    window.showLoading('Scribing your new grimoire...');
-    
+    window.showLoading('Inscribing...');
     try {
         const newDocRef = doc(collection(db, "planner_trips"));
         const newTrip = {
             id: newDocRef.id,
             overview: { title: title, dates: dates, pax: "1" },
-            budget: [
-                { item: "Flights", amount: 0, icon: "plane" },
-                { item: "Accommodation", amount: 0, icon: "bed" }
-            ],
-            locations: [
-                { id: 'loc1', name: 'Main Location', color: 'teal', image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1000&q=80' }
-            ],
-            itinerary: [
-                {
-                    day: 1, date: "Day 1", location: "loc1", title: "Arrival",
-                    events: [{ time: "12:00 PM", desc: "Touchdown", expense: 0, icon: "plane-landing" }]
-                }
-            ]
+            budget: [ { item: "Flights", amount: 0, icon: "plane" } ],
+            locations: [ { id: 'loc1', name: 'Main Location', color: 'primary', image: '' } ],
+            itinerary: [ { day: 1, date: "Day 1", location: "loc1", title: "Arrival", events: [] } ]
         };
         await setDoc(newDocRef, newTrip);
-        
-        document.getElementById('newTripTitle').value = '';
-        document.getElementById('newTripDates').value = '';
-        
-        // Reload list and select new trip
+        document.getElementById('newTripTitle').value = ''; document.getElementById('newTripDates').value = '';
         await window.fetchPlannerTrips();
         window.loadPastTrip(newDocRef.id);
-
-    } catch (err) { window.showToast('Failed to create journey.', 'error'); console.error(err); }
+    } catch (err) { window.showToast('Failed to create.', 'error'); }
 }
 
 window.loadPastTrip = async function(forcedId = null) {
     const docId = forcedId || document.getElementById('saved-trips-dropdown').value;
     if (!docId) return;
-    window.showLoading('Materializing your itinerary…');
+    window.showLoading('Loading Grimoire...');
     try {
         const docRef = doc(db, "planner_trips", docId);
         const docSnap = await getDoc(docRef);
-        
         if (docSnap.exists()) {
             window.tripData = { id: docSnap.id, ...docSnap.data() };
-            
-            const url = new URL(window.location);
-            url.searchParams.set('planner', window.tripData.id);
-            url.searchParams.delete('ledger');
-            window.history.pushState({}, '', url);
-
+            const url = new URL(window.location); url.searchParams.set('planner', window.tripData.id); url.searchParams.delete('ledger'); window.history.pushState({}, '', url);
             window.hideOverlay();
             setTimeout(() => {
-                document.getElementById('main-header').style.display = 'block';
-                document.getElementById('planner-content').style.display = 'block';
+                document.getElementById('app-header').classList.remove('hidden');
+                document.getElementById('planner-view').classList.remove('hidden');
                 window.initPlannerUI();
-            }, 1500);
-        } else { window.showToast('Failed to load trip: Record not found.', 'error'); }
-    } catch (err) { window.showToast('Magic interrupted. Check network or database rules.', 'error'); console.error(err); } 
+            }, 1000);
+        } else { window.showToast('Not found.', 'error'); }
+    } catch (err) { window.showToast('Error loading.', 'error'); } 
     finally { window.hideLoading(); }
 }
 
-window.copyPlannerLink = function() {
-    const url = new URL(window.location.href);
-    url.searchParams.set('planner', window.tripData.id);
-    url.searchParams.delete('ledger');
-    navigator.clipboard.writeText(url.href).then(() => {
-        window.showToast('Grimoire Link Copied! 🔗', 'success');
-    }).catch(() => window.showToast('Failed to copy link', 'error'));
-}
-
 window.initPlannerUI = function() {
-    document.getElementById('header-title').textContent = window.sanitizeText(window.tripData.overview.title);
-    window.renderPlannerHeaderMeta();
-    window.createBlossoms();
+    window.renderPlannerHeader();
     window.renderPlannerFilters();
     window.renderPlannerContent();
 }
@@ -972,16 +635,15 @@ window.initPlannerUI = function() {
 window.schedulePlannerSave = function() {
     clearTimeout(window.saveTimeout); window.showSaveIndicator('saving');
     window.saveTimeout = setTimeout(async () => {
-        try {
-            await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData);
-            window.showSaveIndicator('saved');
-        } catch (err) { window.showSaveIndicator('error'); console.error(err); }
+        try { await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData); window.showSaveIndicator('saved'); } 
+        catch (err) { window.showSaveIndicator('error'); }
     }, 1200);
 }
 
-// INLINE EDITING FUNCTIONS
+// Inline Edits
 window.updatePlannerTitle = function(val) { window.tripData.overview.title = val; window.schedulePlannerSave(); }
 window.updatePlannerDates = function(val) { window.tripData.overview.dates = val; window.schedulePlannerSave(); }
+window.updatePlannerPax = function(val) { window.tripData.overview.pax = val; window.schedulePlannerSave(); }
 window.updateDayDate = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).date = val; window.schedulePlannerSave(); }
 window.updateDayTitle = function(dayNum, val) { window.tripData.itinerary.find(d => d.day === dayNum).title = val; window.schedulePlannerSave(); }
 window.updateEventTime = function(dayNum, idx, val) { window.tripData.itinerary.find(d => d.day === dayNum).events[idx].time = val; window.schedulePlannerSave(); }
@@ -990,80 +652,72 @@ window.updateEventDesc = function(dayNum, idx, val) { window.tripData.itinerary.
 window.addPlannerEvent = function(dayNum) {
     const day = window.tripData.itinerary.find(d => d.day === dayNum);
     day.events.push({ time: "12:00 PM", desc: "New Activity", expense: 0, icon: "circle" });
-    window.schedulePlannerSave();
-    window.renderPlannerContent();
+    window.schedulePlannerSave(); window.renderPlannerContent();
 }
 
 window.deletePlannerEvent = function(dayNum, idx) {
     if(!confirm("Delete this event?")) return;
     window.tripData.itinerary.find(d => d.day === dayNum).events.splice(idx, 1);
-    window.schedulePlannerSave();
-    window.renderPlannerContent();
-    window.renderPlannerHeaderMeta();
+    window.schedulePlannerSave(); window.renderPlannerContent(); window.renderPlannerHeader();
 }
 
 window.addPlannerDay = function() {
     const newDayNum = window.tripData.itinerary.length ? Math.max(...window.tripData.itinerary.map(d => d.day)) + 1 : 1;
-    window.tripData.itinerary.push({
-        day: newDayNum,
-        date: "New Date",
-        location: window.tripData.locations && window.tripData.locations.length > 0 ? window.tripData.locations[0].id : 'loc1',
-        title: "New Day",
-        events: []
-    });
-    window.schedulePlannerSave();
-    window.renderPlannerContent();
+    window.tripData.itinerary.push({ day: newDayNum, date: "New Date", location: window.tripData.locations?.[0]?.id || 'loc1', title: "New Day", events: [] });
+    window.schedulePlannerSave(); window.renderPlannerContent();
 }
 
-window.renderPlannerHeaderMeta = function() {
+window.renderPlannerHeader = function() {
     const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
-    document.getElementById('header-meta').innerHTML = `
-        <div class="meta-chip"><i data-lucide="calendar" style="width:13px;height:13px;"></i> <span contenteditable="true" onblur="window.updatePlannerDates(this.innerText)">${window.sanitizeText(window.tripData.overview.dates)}</span></div>
-        <div class="meta-chip"><i data-lucide="users" style="width:13px;height:13px;"></i> ${window.sanitizeText(window.tripData.overview.pax || '')} pax</div>
-        <div class="meta-chip"><i data-lucide="wallet" style="width:13px;height:13px;"></i> Total: $${grandTotal.toLocaleString()}</div>
+    document.getElementById('app-header-left').innerHTML = `
+        <div class="font-serif italic text-2xl text-primary outline-none whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-md" contenteditable="true" onblur="window.updatePlannerTitle(this.innerText)">${window.sanitizeText(window.tripData.overview.title)}</div>
+        <div class="flex items-center gap-2 mt-1">
+            <span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded uppercase tracking-tighter outline-none" contenteditable="true" onblur="window.updatePlannerDates(this.innerText)">${window.sanitizeText(window.tripData.overview.dates)}</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-tighter outline-none" contenteditable="true" onblur="window.updatePlannerPax(this.innerText)">${window.sanitizeText(window.tripData.overview.pax || '1')} Pax</span>
+        </div>
     `;
-    lucide.createIcons({ nodes: [document.getElementById('header-meta')] });
+    document.getElementById('app-header-right').innerHTML = `
+        <div class="hidden md:flex flex-col items-end mr-6">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none mb-1">Grand Total</p>
+            <p class="font-serif text-2xl text-primary font-bold">¥${grandTotal.toLocaleString()}</p>
+        </div>
+        <button onclick="window.copyPlannerLink()" class="text-on-surface-variant hover:text-primary transition-colors"><i data-lucide="share" style="width:20px;"></i></button>
+        <button onclick="window.openDeleteModal()" class="text-on-surface-variant hover:text-error transition-colors"><i data-lucide="trash-2" style="width:20px;"></i></button>
+    `;
+    lucide.createIcons({ nodes: [document.getElementById('app-header')] });
 }
 
 window.renderPlannerFilters = function() {
     const nav = document.getElementById('filter-nav');
-    let html = `<button onclick="window.setFilter('all')" class="filter-btn ${window.activeFilter === 'all' ? 'active' : ''}">
-        <i data-lucide="layout-list" style="width:12px;height:12px;"></i> Full Itinerary
-    </button>`;
+    let html = `<button onclick="window.setFilter('all')" class="px-6 py-2 rounded-full text-sm font-label whitespace-nowrap transition-colors ${window.activeFilter === 'all' ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">Full Itinerary</button>`;
     (window.tripData.locations || []).forEach(loc => {
-        const theme = window.getTheme(loc.color);
-        html += `<button onclick="window.setFilter('${window.sanitizeText(loc.id)}')" class="filter-btn ${window.activeFilter === loc.id ? 'active' : ''}">
-            <span style="width:8px;height:8px;border-radius:50%;background:${theme.dot};display:inline-block;flex-shrink:0;"></span>
-            ${window.sanitizeText(loc.name)}
-        </button>`;
+        html += `<button onclick="window.setFilter('${window.sanitizeText(loc.id)}')" class="px-6 py-2 rounded-full text-sm font-label whitespace-nowrap transition-colors ${window.activeFilter === loc.id ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">${window.sanitizeText(loc.name)}</button>`;
     });
-    nav.innerHTML = html; lucide.createIcons({ nodes: [nav] });
+    nav.innerHTML = html;
 }
 
 window.renderPlannerContent = function() {
     let html = '';
-    if (window.activeFilter === 'all') html += window.renderBudget(); else html += window.renderHero();
-    html += window.renderExpenseSummary(); html += window.renderTimeline();
-    // Allow contenteditable and onblur inline handlers to pass through DOMPurify safely
+    if (window.activeFilter === 'all') html += window.renderBudget();
+    html += window.renderExpenseSummary();
+    html += window.renderTimeline();
     document.getElementById('planner-content').innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'onchange', 'onclick', 'onblur', 'contenteditable'] });
     lucide.createIcons({ nodes: [document.getElementById('planner-content')] });
 }
 
 window.setFilter = function(filterId) {
     window.activeFilter = filterId;
-    Object.values(window.mapInstances).forEach(m => { try { m.remove(); } catch(_){} });
-    window.mapInstances = {}; window.openMaps.clear();
+    Object.values(window.mapInstances).forEach(m => { try { m.remove(); } catch(_){} }); window.mapInstances = {}; window.openMaps.clear();
     window.renderPlannerFilters(); window.renderPlannerContent(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.sanitizeText(window.tripData.overview.title)}" will be permanently erased.`; document.getElementById('delete-modal').style.display = 'flex'; }
-window.closeDeleteModal = function() { document.getElementById('delete-modal').style.display = 'none'; }
+// Planner Deletion
+window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.sanitizeText(window.tripData.overview.title)}" will be permanently erased.`; document.getElementById('delete-modal').classList.add('show'); }
+window.closeDeleteModal = function() { document.getElementById('delete-modal').classList.remove('show'); }
 window.confirmDeletePlanner = async function() {
     window.closeDeleteModal();
-    try {
-        await deleteDoc(doc(db, "planner_trips", window.tripData.id));
-        window.showToast('Journey erased.', 'success'); setTimeout(() => window.softReset(), 800);
-    } catch (e) { window.showToast('Network error', 'error'); }
+    try { await deleteDoc(doc(db, "planner_trips", window.tripData.id)); window.showToast('Journey erased.', 'success'); setTimeout(() => window.softReset(), 800); } 
+    catch (e) { window.showToast('Network error', 'error'); }
 }
 
 window.getTotalActivityExpenses = function() { return window.tripData.itinerary.reduce((s, day) => s + day.events.reduce((s2, e) => s2 + (e.expense || 0), 0), 0); }
@@ -1073,107 +727,119 @@ window.getBaseBudgetTotal = function() { return (window.tripData.budget || []).r
 
 window.renderBudget = function() {
     if (!window.tripData.budget || !window.tripData.budget.length) return '';
-    let html = `<div class="section-title"><i data-lucide="credit-card" style="width:18px;height:18px;color:var(--accent);"></i> Base Estimates</div><div class="budget-grid">`;
+    let html = `<section class="grid grid-cols-1 md:grid-cols-3 gap-6">`;
     window.tripData.budget.forEach((item, idx) => {
-        html += `<div class="budget-card"><div class="budget-icon"><i data-lucide="${window.sanitizeText(item.icon || 'circle')}" style="width:16px;height:16px;"></i></div><div style="flex:1;min-width:0;"><div class="budget-label">${window.sanitizeText(item.item)}</div><div class="budget-amount-wrap"><span class="budget-currency">$</span><input type="number" min="0" value="${item.amount || 0}" onchange="window.updateBaseExpense(${idx}, this.value)" class="budget-amount-input"></div></div></div>`;
+        html += `<div class="bg-white p-6 rounded-xl shadow-sm border-b-2 border-primary/20">
+            <div class="flex justify-between items-start mb-4"><i data-lucide="${window.sanitizeText(item.icon || 'circle')}" class="text-primary" style="width:20px;"></i><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Base Estimate</span></div>
+            <label class="block text-xs font-label font-bold text-on-surface-variant mb-1" contenteditable="true" onblur="window.tripData.budget[${idx}].item=this.innerText;window.schedulePlannerSave();">${window.sanitizeText(item.item)}</label>
+            <div class="relative"><span class="absolute left-0 bottom-2 text-primary font-serif">¥</span>
+            <input class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary pt-2 pb-1 pl-4 font-serif text-xl focus:ring-0 outline-none" type="number" min="0" value="${item.amount || 0}" onchange="window.updateBaseExpense(${idx}, this.value)"/></div>
+        </div>`;
     });
-    return html + '</div>';
+    return html + '</section>';
 }
-window.updateBaseExpense = function(idx, val) { window.tripData.budget[idx].amount = Math.max(0, parseInt(val) || 0); window.schedulePlannerSave(); window.renderPlannerHeaderMeta(); document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); }
+window.updateBaseExpense = function(idx, val) { window.tripData.budget[idx].amount = Math.max(0, parseInt(val) || 0); window.schedulePlannerSave(); window.renderPlannerHeader(); document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); }
 
 window.renderExpenseSummary = function() {
     const activityTotal = window.activeFilter === 'all' ? window.getTotalActivityExpenses() : window.getLocationExpenses(window.activeFilter);
     const grandTotal = window.getBaseBudgetTotal() + window.getTotalActivityExpenses();
     const pct = Math.min((window.getTotalActivityExpenses() / (grandTotal || 1)) * 100, 100);
-    const filteredLocs = window.activeFilter === 'all' ? (window.tripData.locations || []) : (window.tripData.locations || []).filter(l => l.id === window.activeFilter);
-    let locRows = '';
-    filteredLocs.forEach(loc => { const theme = window.getTheme(loc.color); const amt = window.getLocationExpenses(loc.id); locRows += `<div class="loc-row"><span class="loc-name" style="color:var(--text-main);"><span style="width:8px;height:8px;border-radius:50%;background:${theme.dot};display:inline-block;"></span>${window.sanitizeText(loc.name)}</span><span class="loc-amount">$${amt.toLocaleString()}</span></div>`; });
-    return `<div class="expense-summary" id="expense-summary-section"><div class="expense-header"><div style="display:flex;align-items:center;gap:10px;"><div class="section-title" style="margin:0; border:none; padding:0;"><i data-lucide="wallet" style="width:18px;height:18px;color:var(--accent);"></i> Activity Spend</div><button class="zeroise-btn" onclick="window.zeroisePlannerExpenses()">Reset</button></div><div style="text-align:right;"><div class="expense-total">$${activityTotal.toLocaleString()}</div></div></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct.toFixed(1)}%;"></div></div><div class="loc-breakdown">${locRows}</div></div>`;
+    return `<section id="expense-summary-section" class="bg-surface-container-low p-8 rounded-2xl border-l-4 border-secondary-container">
+        <div class="flex justify-between items-center mb-6">
+            <div><h3 class="font-serif text-xl">Activity Spend Summary</h3><p class="text-sm text-on-surface-variant cursor-pointer hover:text-error" onclick="window.zeroisePlannerExpenses()">Reset Actuals to 0</p></div>
+            <div class="text-right"><p class="text-lg font-bold font-serif">¥${activityTotal.toLocaleString()}</p></div>
+        </div>
+        <div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div></div>
+    </section>`;
 }
-window.zeroisePlannerExpenses = function() { window.tripData.itinerary.forEach(day => { day.events.forEach(e => { e.expense = 0; }); }); window.schedulePlannerSave(); window.renderPlannerHeaderMeta(); window.renderPlannerContent(); window.showToast('Reset to $0.', 'info'); }
-
-window.renderHero = function() {
-    const loc = (window.tripData.locations || []).find(l => l.id === window.activeFilter); if (!loc || !loc.image) return ''; const safeUrl = window.sanitizeURL(loc.image); if (!safeUrl) return '';
-    return `<div class="loc-hero"><img src="${safeUrl}"><div class="loc-hero-overlay"><div class="loc-hero-name">${window.sanitizeText(loc.name)}</div></div></div>`;
-}
+window.zeroisePlannerExpenses = function() { window.tripData.itinerary.forEach(day => day.events.forEach(e => e.expense = 0)); window.schedulePlannerSave(); window.renderPlannerHeader(); window.renderPlannerContent(); }
 
 window.renderTimeline = function() {
     const days = (window.tripData.itinerary || []).filter(d => window.activeFilter === 'all' || d.location === window.activeFilter);
-    if (!days.length) return `<div class="empty-state-main">No events found.</div><div class="divider"><span>Or</span></div><button onclick="window.addPlannerDay()" class="btn-primary" style="margin: 0 auto; max-width: 250px;"><i data-lucide="calendar-plus" style="width:16px;height:16px;"></i> Add New Day</button>`;
+    if (!days.length) return `<div class="text-center py-10"><button onclick="window.addPlannerDay()" class="btn-primary">Add New Day</button></div>`;
     
-    let html = '';
+    let html = `<section class="space-y-8 relative"><div class="absolute left-6 top-8 bottom-0 w-0.5 bg-outline-variant/30 md:left-8 z-0"></div>`;
     days.forEach(day => {
-        const loc = (window.tripData.locations || []).find(l => l.id === day.location); const theme = window.getTheme(loc ? loc.color : 'amber'); const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
-        html += `<div class="day-card"><div class="day-header"><div><div class="day-label" style="color:var(--text-muted);">Day ${day.day} &bull; <span contenteditable="true" onblur="window.updateDayDate(${day.day}, this.innerText)">${window.sanitizeText(day.date)}</span></div><div class="day-title" contenteditable="true" onblur="window.updateDayTitle(${day.day}, this.innerText)">${window.sanitizeText(day.title)}</div></div><div class="day-chips"><div class="day-expense-chip" id="day-expense-${day.day}">$${window.getDayExpenses(day.day).toLocaleString()}</div>${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="map-toggle"><i data-lucide="map" style="width:11px;height:11px;"></i> Map</button>` : ''}</div></div>${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}<div class="events-wrap"><div class="timeline-rail">`;
+        const hasMap = day.events && day.events.some(e => e.latlng && e.latlng.length === 2);
+        html += `<div class="relative pl-14 md:pl-20 z-10">
+            <div class="absolute left-0 top-0 w-12 h-12 md:w-16 md:h-16 bg-primary text-white rounded-xl flex flex-col items-center justify-center shadow-lg transform rotate-[-2deg]">
+                <span class="text-[10px] font-bold uppercase tracking-tighter">Day</span><span class="text-2xl font-serif leading-none">${day.day}</span>
+            </div>
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-outline-variant/20">
+                <div class="p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <p class="text-xs font-bold text-tertiary uppercase tracking-widest mb-1 outline-none" contenteditable="true" onblur="window.updateDayDate(${day.day}, this.innerText)">${window.sanitizeText(day.date)}</p>
+                            <h4 class="font-serif text-3xl outline-none" contenteditable="true" onblur="window.updateDayTitle(${day.day}, this.innerText)">${window.sanitizeText(day.title)}</h4>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-right"><p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">Day Cost</p><p class="font-serif text-xl text-primary" id="day-expense-${day.day}">¥${window.getDayExpenses(day.day).toLocaleString()}</p></div>
+                            ${hasMap ? `<button onclick="window.toggleMap(${day.day})" id="map-toggle-${day.day}" class="flex items-center gap-2 px-4 py-2 bg-surface-container-low hover:bg-surface-container-high rounded-lg border border-outline-variant/20 text-sm font-label transition-colors"><i data-lucide="map" style="width:14px;"></i> Map</button>` : ''}
+                        </div>
+                    </div>
+                    ${hasMap ? `<div id="map-container-${day.day}" class="map-container"><div id="map-${day.day}" class="day-map"></div></div>` : ''}
+                    <div class="space-y-8 relative pl-4">`;
+        
         (day.events || []).forEach((event, idx) => {
-            const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" rel="noopener noreferrer">${rawDesc}</a>` : rawDesc;
-            html += `<div class="event-item"><div class="event-dot" style="border-color:${theme.dot};"><i data-lucide="${window.sanitizeText(event.icon || 'circle')}" style="width:9px;height:9px;color:${theme.dot};"></i></div><div class="event-row"><div class="event-time" contenteditable="true" onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</div><div class="event-body"><div class="event-name" contenteditable="true" onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div><div class="expense-input-wrap"><span class="expense-currency-label">$</span><input type="number" min="0" step="1" class="expense-field" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)"><button onclick="window.deletePlannerEvent(${day.day}, ${idx})" class="icon-btn danger" style="padding: 4px; margin-left: 4px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button></div></div></div>`;
+            const safeLink = window.sanitizeURL(event.link); const rawDesc = window.sanitizeText(event.desc || ''); const nameHtml = safeLink ? `<a href="${safeLink}" target="_blank" class="text-primary hover:underline">${rawDesc}</a>` : rawDesc;
+            html += `<div class="relative group">
+                <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-white"></div>
+                <div class="flex flex-col md:flex-row gap-4 md:items-start">
+                    <div class="w-24 pt-1 shrink-0"><p class="text-xs font-bold text-on-surface-variant font-label outline-none" contenteditable="true" onblur="window.updateEventTime(${day.day}, ${idx}, this.innerText)">${window.sanitizeText(event.time || '')}</p></div>
+                    <div class="flex-1"><div class="flex justify-between items-start">
+                        <div class="flex-1 pr-4"><div class="font-bold text-lg leading-tight mb-1 outline-none" contenteditable="true" onblur="window.updateEventDesc(${day.day}, ${idx}, this.innerHTML)">${nameHtml}</div></div>
+                        <div class="flex items-center gap-2 bg-surface-container-low rounded-lg px-2 border border-outline-variant/20">
+                            <span class="text-xs text-on-surface-variant">¥</span><input type="number" min="0" step="1" class="w-16 bg-transparent border-none focus:ring-0 text-right p-1 font-serif text-primary" value="${event.expense || 0}" onchange="window.updatePlannerExpense(${day.day}, ${idx}, this.value)">
+                            <button onclick="window.deletePlannerEvent(${day.day}, ${idx})" class="text-outline-variant hover:text-error transition-colors p-1"><i data-lucide="x" style="width:14px;"></i></button>
+                        </div>
+                    </div></div>
+                </div>
+            </div>`;
         });
-        html += `</div><button onclick="window.addPlannerEvent(${day.day})" class="btn-secondary" style="margin-top: 16px; width: auto;"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Time Slot</button></div></div>`;
+        html += `</div><button onclick="window.addPlannerEvent(${day.day})" class="mt-8 w-full py-4 border-2 border-dashed border-outline-variant/30 rounded-xl text-on-surface-variant hover:border-primary/40 hover:text-primary transition-all flex items-center justify-center gap-2 group"><i data-lucide="plus-circle" class="group-hover:scale-110 transition-transform" style="width:20px;"></i><span class="text-sm font-label font-bold uppercase tracking-widest">Add Event</span></button></div></div></div>`;
     });
-    
-    html += `<div class="divider"><span>Journey Onward</span></div><button onclick="window.addPlannerDay()" class="btn-primary" style="margin: 0 auto; max-width: 250px;"><i data-lucide="calendar-plus" style="width:16px;height:16px;"></i> Add New Day</button>`;
+    html += `</section><div class="pt-8 flex justify-center"><button onclick="window.addPlannerDay()" class="btn-primary shadow-xl"><i data-lucide="sparkles" style="width:20px;"></i> Inscribe Next Day</button></div>`;
     return html;
 }
 
 window.updatePlannerExpense = function(dayNum, idx, val) { 
     window.tripData.itinerary.find(d => d.day === dayNum).events[idx].expense = Math.max(0, parseInt(val) || 0); 
-    window.schedulePlannerSave(); 
-    window.renderPlannerHeaderMeta(); 
+    window.schedulePlannerSave(); window.renderPlannerHeader(); 
     document.getElementById('expense-summary-section').outerHTML = DOMPurify.sanitize(window.renderExpenseSummary(), { ADD_ATTR: ['onclick']}); 
-    const badge = document.getElementById(`day-expense-${dayNum}`);
-    if (badge) badge.textContent = `$${window.getDayExpenses(dayNum).toLocaleString()}`;
-    lucide.createIcons({ nodes: [document.getElementById('planner-content')] }); 
+    const badge = document.getElementById(`day-expense-${dayNum}`); if (badge) badge.textContent = `¥${window.getDayExpenses(dayNum).toLocaleString()}`;
 }
 
 window.toggleMap = function(dayNum) {
     const container = document.getElementById(`map-container-${dayNum}`); const btn = document.getElementById(`map-toggle-${dayNum}`);
-    if (window.openMaps.has(dayNum)) { container.classList.remove('open'); window.openMaps.delete(dayNum); if(btn) btn.classList.remove('open'); } 
-    else { container.classList.add('open'); window.openMaps.add(dayNum); if(btn) btn.classList.add('open'); setTimeout(() => window.initMap(dayNum), 80); }
+    if (window.openMaps.has(dayNum)) { container.classList.remove('open'); window.openMaps.delete(dayNum); if(btn) btn.classList.remove('bg-primary', 'text-white'); } 
+    else { container.classList.add('open'); window.openMaps.add(dayNum); if(btn) btn.classList.add('bg-primary', 'text-white'); setTimeout(() => window.initMap(dayNum), 80); }
 }
 window.initMap = function(dayNum) {
     const mapEl = document.getElementById(`map-${dayNum}`); if (!mapEl || window.mapInstances[dayNum]) return;
     const day = window.tripData.itinerary.find(d => d.day === dayNum); const events = (day.events || []).filter(e => e.latlng && e.latlng.length === 2); if (!events.length) return;
-    const theme = window.getTheme((window.tripData.locations || []).find(l => l.id === day.location)?.color || 'amber');
     const map = L.map(mapEl, { scrollWheelZoom: false }); window.mapInstances[dayNum] = map;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    
+    // Light mode map tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+    
     const latlngs = [];
     events.forEach((e, i) => {
-        const icon = L.divIcon({ className: '', html: `<div style="background:${theme.mapMarker};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
-        const cleanDesc = window.sanitizeText(e.desc || '');
-        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${cleanDesc}</strong>`);
+        const icon = L.divIcon({ className: '', html: `<div style="background:#256296;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);">${i + 1}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+        L.marker(e.latlng, { icon }).addTo(map).bindPopup(`<strong>${i + 1}. ${window.sanitizeText(e.desc || '')}</strong>`);
         latlngs.push(e.latlng);
     });
-    if (latlngs.length > 1) L.polyline(latlngs, { color: theme.mapMarker, weight: 2.5, dashArray: '6 6', opacity: 0.8 }).addTo(map);
+    if (latlngs.length > 1) L.polyline(latlngs, { color: '#256296', weight: 3, dashArray: '5 5' }).addTo(map);
     if (latlngs.length) map.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30] });
     setTimeout(() => { try { map.invalidateSize(); } catch(_) {} }, 450);
 }
 
-window.initTitleParticles = function() {
-    const c = document.getElementById('title-canvas'); if (!c) return; const ctx = c.getContext('2d');
-    function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
-    window.addEventListener('resize', resize); resize();
-    const particles = Array.from({length: 80}, () => ({ x: Math.random() * c.width, y: Math.random() * c.height, vy: -(Math.random() * 0.4 + 0.1), vx: (Math.random() - 0.5) * 0.2, size: Math.random() * 2 + 0.5, alpha: Math.random() * 0.4 + 0.1, color: ['#7ab8d0','#a0c8e0','#c0e0f0','#6090a8','#8ab0c8'][Math.floor(Math.random()*5)] }));
-    function tick() {
-        if (!particlesActive) return; ctx.clearRect(0,0,c.width,c.height);
-        particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.y < -5) { p.y = c.height + 5; p.x = Math.random()*c.width; }
-            ctx.globalAlpha = p.alpha * (0.7 + 0.3*Math.sin(Date.now()*0.001 + p.x)); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
-        requestAnimationFrame(tick);
-    }
-    particlesActive = true; tick();
+window.copyPlannerLink = function() {
+    const url = new URL(window.location.href); url.searchParams.set('planner', window.tripData.id); url.searchParams.delete('ledger');
+    navigator.clipboard.writeText(url.href).then(() => { window.showToast('Link Copied!', 'success'); });
 }
-window.createBlossoms = function() {
-    const container = document.getElementById('blossom-container'); container.innerHTML = '';
-    for (let i = 0; i < 25; i++) {
-        const p = document.createElement('div'); p.className = 'petal'; const s = Math.random() * 7 + 5;
-        p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random() * 120 - 10}vw; animation-duration:${Math.random() * 9 + 7}s; animation-delay:-${Math.random() * 12}s; opacity:${Math.random() * 0.4 + 0.3};`;
-        container.appendChild(p);
-    }
-}
-
 
 // ============================================================
-//  APP 2: LEDGER (WHO PAY WHO) LOGIC (FIRESTORE)
+//  APP 2: LEDGER LOGIC
 // ============================================================
 window.ledgerTrips = [];
 window.activeLedgerId = null;
@@ -1182,120 +848,87 @@ window.currentSettlements = [];
 window.chartInstance = null;
 
 window.fetchLedgerTrips = async function() {
-    const listEl = document.getElementById('ledgerList');
-    const msgEl = document.getElementById('ledgerLoadingMsg');
-    msgEl.style.display = 'block'; listEl.innerHTML = '';
+    const listEl = document.getElementById('ledgerList'); const msgEl = document.getElementById('ledgerLoadingMsg');
+    msgEl.classList.remove('hidden'); listEl.innerHTML = '';
     try {
-        const q = query(collection(db, "debt_ledgers"));
-        const snapshot = await getDocs(q);
-        window.ledgerTrips = [];
+        const q = query(collection(db, "debt_ledgers")); const snapshot = await getDocs(q); window.ledgerTrips = [];
         snapshot.forEach(doc => { window.ledgerTrips.push({ id: doc.id, ...doc.data() }); });
+        msgEl.classList.add('hidden');
+        if (window.ledgerTrips.length === 0) { listEl.innerHTML = '<div class="p-4 text-center text-on-surface-variant font-label text-sm border border-dashed border-outline-variant/40 rounded-xl">No ledgers yet</div>'; return; }
         
-        msgEl.style.display = 'none';
-        if (window.ledgerTrips.length === 0) { listEl.innerHTML = '<div class="empty-state-main" style="border:none;background:transparent;">No ledgers yet!</div>'; return; }
-        
-        // Reverse array so oldest appear first per user request
-        const sortedLedgers = window.ledgerTrips.reverse();
-
-        sortedLedgers.forEach(trip => {
-            const btn = document.createElement('button');
-            btn.className = 'btn-secondary';
-            btn.style.width = '100%';
-            btn.style.justifyContent = 'flex-start';
-            btn.innerHTML = `<i data-lucide="book" style="width:16px;height:16px;"></i> ${window.sanitizeText(trip.name)} <span style="margin-left:auto;font-size:0.75rem;opacity:0.6;">${(trip.users||[]).length} pax</span>`;
-            btn.onclick = () => window.openLedger(trip.id);
-            listEl.appendChild(btn);
+        window.ledgerTrips.reverse().forEach(trip => {
+            listEl.innerHTML += `<button class="w-full bg-white hover:bg-surface-container-low transition-colors p-4 rounded-xl shadow-sm border border-outline-variant/20 flex items-center justify-between" onclick="window.openLedger('${trip.id}')">
+                <span class="font-headline font-bold text-primary flex items-center gap-2"><i data-lucide="book-open" style="width:18px;"></i> ${window.sanitizeText(trip.name)}</span>
+                <span class="text-xs font-label text-on-surface-variant bg-surface-container p-1 px-2 rounded">${(trip.users||[]).length} Pax</span>
+            </button>`;
         });
         lucide.createIcons({ nodes: [listEl] });
-
-    } catch(err) {
-        msgEl.innerHTML = '<span style="color:#ef4444;">Connection failed.</span>';
-        console.error("Fetch Ledger Error:", err);
-    }
+    } catch(err) { msgEl.innerHTML = '<span class="text-error">Connection failed.</span>'; }
 }
 
 window.createLedger = async function(e) {
     e.preventDefault();
-    const rawName = document.getElementById('ledgerName').value.trim();
-    const currency = document.getElementById('ledgerCurrency').value;
+    const rawName = document.getElementById('ledgerName').value.trim(); const currency = document.getElementById('ledgerCurrency').value;
     const newDocRef = doc(collection(db, "debt_ledgers"));
     const newTrip = { id: newDocRef.id, name: rawName.charAt(0).toUpperCase() + rawName.slice(1), currency: currency, users: [], expenses: [] };
-    
-    window.ledgerTrips.push(newTrip); 
-    document.getElementById('ledgerName').value = '';
-    window.openLedger(newTrip.id);
-    
-    await setDoc(newDocRef, newTrip);
+    window.ledgerTrips.push(newTrip); document.getElementById('ledgerName').value = '';
+    window.openLedger(newTrip.id); await setDoc(newDocRef, newTrip);
 }
 
 window.switchLedgerTab = function(tabId) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`tabbtn-${tabId}`).classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-    document.getElementById(`tab-${tabId}`).classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    ['dash', 'party', 'ledger', 'settle'].forEach(id => {
+        const btn = document.getElementById(`tabbtn-${id}`); const sec = document.getElementById(`tab-${id}`);
+        if(id === tabId) { btn.classList.add('text-primary', 'border-primary', 'border-b-2'); btn.classList.remove('text-on-surface-variant'); sec.classList.remove('hidden'); }
+        else { btn.classList.remove('text-primary', 'border-primary', 'border-b-2'); btn.classList.add('text-on-surface-variant'); sec.classList.add('hidden'); }
+    });
 }
 
 window.openLedger = function(id) {
     window.activeLedgerId = id;
-    
-    const url = new URL(window.location);
-    url.searchParams.set('ledger', id);
-    url.searchParams.delete('planner');
-    window.history.pushState({}, '', url);
-
+    const url = new URL(window.location); url.searchParams.set('ledger', id); url.searchParams.delete('planner'); window.history.pushState({}, '', url);
     window.hideOverlay();
     setTimeout(() => {
-        document.getElementById('ledger-header').style.display = 'block';
-        document.getElementById('ledger-view').style.display = 'block';
-        window.switchLedgerTab('dash'); 
-        window.cancelEdit(); window.renderLedgerDetails();
-    }, 1500);
+        document.getElementById('app-header').classList.remove('hidden');
+        document.getElementById('ledger-view').classList.remove('hidden');
+        window.switchLedgerTab('dash'); window.cancelEdit(); window.renderLedgerDetails();
+    }, 1000);
 }
 
 window.getActiveLedger = function() { return window.ledgerTrips.find(t => t.id === window.activeLedgerId); }
-
 window.saveLedgerData = async function(tripToSave) {
-    if (!tripToSave) return;
-    window.showSaveIndicator('saving');
-    try {
-        await setDoc(doc(db, "debt_ledgers", tripToSave.id), tripToSave);
-        window.showSaveIndicator('saved');
-    } catch (e) { window.showSaveIndicator('error'); console.error(e); }
+    if (!tripToSave) return; window.showSaveIndicator('saving');
+    try { await setDoc(doc(db, "debt_ledgers", tripToSave.id), tripToSave); window.showSaveIndicator('saved'); } catch (e) { window.showSaveIndicator('error'); }
+}
+
+// Ledger Header & Actions
+window.setupLedgerHeader = function(trip) {
+    document.getElementById('app-header-left').innerHTML = `<h1 class="text-2xl font-headline italic font-bold text-primary tracking-tight">${window.sanitizeText(trip.name)}</h1>`;
+    document.getElementById('app-header-right').innerHTML = `
+        <button onclick="window.copyLedgerLink()" class="text-on-surface-variant hover:text-primary transition-colors"><i data-lucide="share" style="width:20px;"></i></button>
+        <button onclick="window.deleteLedger()" class="text-on-surface-variant hover:text-error transition-colors"><i data-lucide="trash-2" style="width:20px;"></i></button>
+    `;
+    lucide.createIcons({ nodes: [document.getElementById('app-header')] });
 }
 
 window.deleteLedger = async function() {
-    if (!confirm("Are you sure you want to delete this ledger forever?")) return;
-    const tripIdToDelete = window.activeLedgerId;
-    window.ledgerTrips = window.ledgerTrips.filter(t => t.id !== window.activeLedgerId);
-    window.softReset();
-    try {
-        await deleteDoc(doc(db, "debt_ledgers", tripIdToDelete));
-    } catch(e) { console.error(e); }
+    if (!confirm("Delete this ledger forever?")) return;
+    const tripId = window.activeLedgerId; window.ledgerTrips = window.ledgerTrips.filter(t => t.id !== window.activeLedgerId); window.softReset();
+    try { await deleteDoc(doc(db, "debt_ledgers", tripId)); } catch(e) {}
 }
-
 window.copyLedgerLink = function() {
-    const url = new URL(window.location.href);
-    url.searchParams.set('ledger', window.activeLedgerId);
-    url.searchParams.delete('planner');
-    navigator.clipboard.writeText(url.href).then(() => {
-        window.showToast('Ledger Link Copied! 🔗', 'success');
-    });
+    const url = new URL(window.location.href); url.searchParams.set('ledger', window.activeLedgerId); url.searchParams.delete('planner');
+    navigator.clipboard.writeText(url.href).then(() => { window.showToast('Ledger Link Copied!', 'success'); });
 }
 
 // User Logic
 window.addUser = function(e) {
     e.preventDefault();
-    const rawName = document.getElementById('userName').value.trim();
-    const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-    const trip = window.getActiveLedger();
+    const name = document.getElementById('userName').value.trim(); const trip = window.getActiveLedger();
     if (name && !trip.users.includes(name)) { trip.users.push(name); window.renderLedgerDetails(); document.getElementById('userName').value = ''; window.saveLedgerData(trip); }
 }
-
 window.deleteUser = function(userName) {
     const trip = window.getActiveLedger();
-    if (trip.expenses.some(exp => exp.payer === userName || (exp.involvedUsers && exp.involvedUsers.includes(userName)))) return window.showToast(`${window.sanitizeText(userName)} is tied to some expenses.`, 'warning');
-    if (!confirm(`Remove ${window.sanitizeText(userName)}?`)) return;
+    if (trip.expenses.some(exp => exp.payer === userName || (exp.involvedUsers && exp.involvedUsers.includes(userName)))) return window.showToast(`${window.sanitizeText(userName)} is tied to expenses.`, 'error');
     trip.users = trip.users.filter(u => u !== userName); window.renderLedgerDetails(); window.saveLedgerData(trip);
 }
 
@@ -1303,32 +936,25 @@ window.deleteUser = function(userName) {
 window.saveExpense = function(e) {
     e.preventDefault();
     const trip = window.getActiveLedger();
-    if (trip.users.length === 0) return window.showToast("Please add some people first!", 'warning');
+    if (trip.users.length === 0) return window.showToast("Add people in the Party tab first!", 'error');
+    const involvedUsers = Array.from(document.querySelectorAll('input[name="involved"]:checked')).map(cb => cb.value);
+    if(involvedUsers.length === 0) return window.showToast("Select who splits it.", 'error');
 
-    const checkboxes = document.querySelectorAll('input[name="involved"]:checked');
-    const involvedUsers = Array.from(checkboxes).map(cb => cb.value);
-    if(involvedUsers.length === 0) return window.showToast("Please select who is splitting this expense.", 'warning');
-
-    const category = document.getElementById('expenseCategory').value;
-    const rawDesc = document.getElementById('expenseDesc').value.trim();
-    
+    const category = document.getElementById('expenseCategory').value; const rawDesc = document.getElementById('expenseDesc').value.trim();
     const expenseData = {
         id: window.editingExpenseId || 'EXP_' + Date.now(),
-        desc: `[${category}] ${rawDesc}`,
-        amount: parseFloat(document.getElementById('expenseAmount').value),
-        payer: document.getElementById('expensePayer').value,
-        involvedUsers: involvedUsers
+        desc: `[${category}] ${rawDesc}`, amount: parseFloat(document.getElementById('expenseAmount').value),
+        payer: document.getElementById('expensePayer').value, involvedUsers: involvedUsers
     };
 
     if (window.editingExpenseId) { const index = trip.expenses.findIndex(e => e.id === window.editingExpenseId); trip.expenses[index] = expenseData; } 
     else { trip.expenses.push(expenseData); }
 
-    window.cancelEdit(); window.renderLedgerDetails(); e.target.reset(); window.saveLedgerData(trip);
-    window.showToast('Expense Logged', 'success');
+    window.cancelEdit(); window.renderLedgerDetails(); e.target.reset(); window.saveLedgerData(trip); window.showToast('Logged', 'success');
 }
 
 window.deleteExpense = function(expenseId) {
-    if(!confirm("Delete this expense?")) return;
+    if(!confirm("Delete expense?")) return;
     const trip = window.getActiveLedger(); trip.expenses = trip.expenses.filter(e => e.id !== expenseId); window.renderLedgerDetails(); window.saveLedgerData(trip);
 }
 
@@ -1336,44 +962,37 @@ window.editExpense = function(expenseId) {
     const trip = window.getActiveLedger(); const exp = trip.expenses.find(e => e.id === expenseId); if(!exp) return;
     window.editingExpenseId = expenseId;
     const match = exp.desc.match(/^\[(.*?)\] (.*)$/);
-    if (match) { document.getElementById('expenseCategory').value = match[1]; document.getElementById('expenseDesc').value = match[2]; } 
-    else { document.getElementById('expenseCategory').value = "Other"; document.getElementById('expenseDesc').value = exp.desc; }
+    if (match) { document.getElementById('expenseCategory').value = match[1]; document.getElementById('expenseDesc').value = match[2]; } else { document.getElementById('expenseCategory').value = "Other"; document.getElementById('expenseDesc').value = exp.desc; }
     document.getElementById('expenseAmount').value = exp.amount; document.getElementById('expensePayer').value = exp.payer;
     document.querySelectorAll('input[name="involved"]').forEach(cb => { cb.checked = exp.involvedUsers.includes(cb.value); });
-    document.getElementById('expenseFormTitle').textContent = "Edit Expense"; 
-    document.getElementById('submitExpenseBtn').textContent = "Update Expense";
-    document.getElementById('cancelEditBtn').style.display = "block";
+    document.getElementById('expenseFormTitle').textContent = "Edit Expense"; document.getElementById('submitExpenseBtn').textContent = "Update"; document.getElementById('cancelEditBtn').style.display = "block";
     window.scrollTo({ top: document.getElementById('expenseFormTitle').offsetTop - 100, behavior: 'smooth' });
 }
-
 window.cancelEdit = function() {
     window.editingExpenseId = null; document.getElementById('addExpenseForm').reset();
-    document.getElementById('expenseFormTitle').textContent = "Add an Expense"; 
-    document.getElementById('submitExpenseBtn').textContent = "Save Expense";
-    document.getElementById('cancelEditBtn').style.display = "none";
+    document.getElementById('expenseFormTitle').textContent = "Add Expense"; document.getElementById('submitExpenseBtn').textContent = "Save"; document.getElementById('cancelEditBtn').style.display = "none";
     document.querySelectorAll('input[name="involved"]').forEach(cb => cb.checked = true);
 }
 
 window.executeSettlement = function(fromUser, toUser, amount) {
-    const curr = window.getActiveLedger().currency || '$';
-    if(!confirm(`Mark as paid? This records that ${window.sanitizeText(fromUser)} paid ${curr}${amount.toFixed(2)} to ${window.sanitizeText(toUser)}.`)) return;
-    const trip = window.getActiveLedger();
+    const trip = window.getActiveLedger(); const curr = trip.currency || '¥';
+    if(!confirm(`Record ${window.sanitizeText(fromUser)} paying ${curr}${amount.toFixed(2)} to ${window.sanitizeText(toUser)}?`)) return;
     trip.expenses.push({ id: 'SETTLE_' + Date.now(), desc: `[Settlement] Paid to ${toUser}`, amount: parseFloat(amount), payer: fromUser, involvedUsers: [toUser] });
     window.renderLedgerDetails(); window.saveLedgerData(trip);
 }
-
 window.copySettlements = function() {
-    const trip = window.getActiveLedger(); const curr = trip.currency || '$'; if(!trip || window.currentSettlements.length === 0) return;
+    const trip = window.getActiveLedger(); const curr = trip.currency || '¥'; if(!trip || window.currentSettlements.length === 0) return;
     let text = `${trip.name} Settlements\n------------------------\n`;
     window.currentSettlements.forEach(s => { text += `💸 ${s.from} needs to pay ${curr}${s.amount.toFixed(2)} to ${s.to}\n`; });
-    navigator.clipboard.writeText(text).then(() => { window.showToast('Copied to clipboard!', 'success'); });
+    navigator.clipboard.writeText(text).then(() => { window.showToast('Copied!', 'success'); });
 }
 
 window.renderDebtChart = function(trip) {
-    const ctx = document.getElementById('debtChart').getContext('2d'); const curr = trip.currency || '$'; 
+    const ctx = document.getElementById('debtChart').getContext('2d'); const curr = trip.currency || '¥'; 
     if (window.chartInstance) window.chartInstance.destroy();
+    
     if (trip.expenses.length === 0) {
-        window.chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['Start'], datasets: [{ data: [0], borderColor: 'rgba(100,160,200,0.5)' }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { y: { display: false }, x: { display: false } } } });
+        window.chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['Start'], datasets: [{ data: [0], borderColor: '#b2b2ab' }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } } });
         document.getElementById('chartWrapper').classList.remove('vibrating-chart'); return;
     }
     let chartLabels = ['Start']; let chartData = [0]; let runningBalances = {}; trip.users.forEach(u => runningBalances[u] = 0);
@@ -1393,30 +1012,26 @@ window.renderDebtChart = function(trip) {
     if (latestDebt > 5) { cw.classList.add('vibrating-chart'); cw.style.setProperty('--shake-intensity', `${Math.min(latestDebt/40, 4).toFixed(1)}px`); cw.style.animationDuration = `${Math.max(0.08, 0.3 - (latestDebt/1000))}s`; } 
     else { cw.classList.remove('vibrating-chart'); }
 
-    const isTrendingDown = chartData.length > 2 && chartData[chartData.length - 1] < chartData[chartData.length - 2];
-    const lineColor = isTrendingDown ? '#10b981' : '#7ab8d0'; const bgColor = isTrendingDown ? 'rgba(16, 185, 129, 0.1)' : 'rgba(100, 180, 220, 0.1)';
-
     window.chartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels: chartLabels.map(window.sanitizeText), datasets: [{ data: chartData, borderColor: lineColor, backgroundColor: bgColor, borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: lineColor }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => curr + c.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6a90a8', callback: v => curr + v } }, x: { grid: { display: false }, ticks: { color: '#6a90a8' } } } }
+        data: { labels: chartLabels.map(window.sanitizeText), datasets: [{ data: chartData, borderColor: '#256296', backgroundColor: 'rgba(37, 98, 150, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: '#256296' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => curr + c.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#5e605a', callback: v => curr + v } }, x: { grid: { display: false }, ticks: { color: '#5e605a' } } } }
     });
 }
 
 window.renderLedgerDetails = function() {
     const trip = window.getActiveLedger(); if (!trip) return;
-    const curr = trip.currency || '$';
+    const curr = trip.currency || '¥'; window.setupLedgerHeader(trip);
 
-    document.getElementById('ledger-header-title').textContent = window.sanitizeText(trip.name);
     const userList = document.getElementById('userList'); const expPayer = document.getElementById('expensePayer'); const invCont = document.getElementById('involvedUsersContainer'); const expLog = document.getElementById('expenseLogList');
     userList.innerHTML = ''; expPayer.innerHTML = '<option value="" disabled selected>-- Select Payer --</option>'; invCont.innerHTML = ''; expLog.innerHTML = '';
     
-    if(trip.users.length === 0) userList.innerHTML = '<div class="empty-state-main">The party is empty.</div>';
+    if(trip.users.length === 0) userList.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">Empty party.</div>';
 
     trip.users.forEach(user => {
-        userList.innerHTML += `<li class="ledger-li"><span style="font-weight: 500; font-family:'DM Sans', sans-serif;">${window.sanitizeText(user)}</span><button class="icon-btn danger" onclick="window.deleteUser('${window.sanitizeText(user)}')"><i data-lucide="x" style="width:14px;height:14px;"></i></button></li>`;
+        userList.innerHTML += `<li class="flex items-center justify-between p-3 bg-white border border-outline-variant/20 rounded-lg shadow-sm"><span class="font-bold">${window.sanitizeText(user)}</span><button class="text-outline-variant hover:text-error" onclick="window.deleteUser('${window.sanitizeText(user)}')"><i data-lucide="x" style="width:16px;"></i></button></li>`;
         expPayer.innerHTML += `<option value="${window.sanitizeText(user)}">${window.sanitizeText(user)}</option>`;
-        invCont.innerHTML += `<label><input type="checkbox" name="involved" value="${window.sanitizeText(user)}" checked> ${window.sanitizeText(user)}</label>`;
+        invCont.innerHTML += `<label class="flex items-center gap-2 font-bold text-sm cursor-pointer"><input type="checkbox" name="involved" value="${window.sanitizeText(user)}" class="rounded text-primary focus:ring-primary" checked> ${window.sanitizeText(user)}</label>`;
     });
 
     document.getElementById('expenseAmount').placeholder = `Amount (${curr})`;
@@ -1424,24 +1039,23 @@ window.renderLedgerDetails = function() {
     let categoryTotals = {}; let individualShare = {}; let totalCost = 0; let balances = {};
     trip.users.forEach(u => { individualShare[u] = 0; balances[u] = 0; });
 
-    if (trip.expenses.length === 0) expLog.innerHTML = '<div class="empty-state-main">No expenditures recorded.</div>';
+    if (trip.expenses.length === 0) expLog.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">No expenses yet.</div>';
 
     trip.expenses.forEach(exp => {
         const involved = exp.involvedUsers || trip.users; const involvedCount = involved.length;
         let displayDesc = window.sanitizeText(exp.desc); let categoryName = "Other";
         const match = exp.desc.match(/^\[(.*?)\] (.*)$/);
         if (match) { 
-            categoryName = match[1]; 
-            const isSettle = categoryName === 'Settlement';
-            displayDesc = `<span class="ledger-summary-title" style="color:${isSettle ? 'var(--success)' : 'var(--text-muted)'}; margin-bottom:2px; display:block;">${window.sanitizeText(match[1])}</span><span style="font-size: 1rem; color:var(--text-main); font-weight:${isSettle ? '700' : '400'}; font-family:'DM Sans', sans-serif;">${window.sanitizeText(match[2])}</span>`; 
+            categoryName = match[1]; const isSettle = categoryName === 'Settlement';
+            displayDesc = `<span class="block text-[10px] font-bold uppercase tracking-widest ${isSettle ? 'text-success' : 'text-primary'}">${window.sanitizeText(match[1])}</span><span class="font-bold text-lg leading-tight ${isSettle ? 'text-success' : 'text-on-surface'}">${window.sanitizeText(match[2])}</span>`; 
         }
 
-        expLog.innerHTML += `<li class="ledger-li" style="align-items: flex-start; flex-direction: column;">
-            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 12px; font-family:'DM Sans', sans-serif;">
-                <div>${displayDesc}<br><small style="color:var(--text-muted);">Paid by ${window.sanitizeText(exp.payer)}</small></div>
-                <div style="text-align: right;"><span style="color:var(--text-title); font-weight: 700; font-size: 1.1rem; font-variant-numeric: tabular-nums;">${curr}${exp.amount.toFixed(2)}</span></div>
+        expLog.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20">
+            <div class="flex justify-between mb-3">
+                <div>${displayDesc}<p class="text-xs text-on-surface-variant mt-1">Paid by ${window.sanitizeText(exp.payer)}</p></div>
+                <div class="text-right"><span class="font-serif text-xl font-bold text-primary">${curr}${exp.amount.toFixed(2)}</span></div>
             </div>
-            <div style="display:flex; gap:8px; width:100%;"><button class="icon-btn" onclick="window.editExpense('${exp.id}')">Edit</button><button class="icon-btn danger" onclick="window.deleteExpense('${exp.id}')">Delete</button></div>
+            <div class="flex gap-2 border-t border-outline-variant/20 pt-2"><button class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors flex-1 text-center py-1" onclick="window.editExpense('${exp.id}')">Edit</button><button class="text-xs font-bold text-on-surface-variant hover:text-error transition-colors flex-1 text-center py-1" onclick="window.deleteExpense('${exp.id}')">Delete</button></div>
         </li>`;
 
         if (categoryName !== 'Settlement') { totalCost += parseFloat(exp.amount) || 0; categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + (parseFloat(exp.amount) || 0); }
@@ -1456,14 +1070,17 @@ window.renderLedgerDetails = function() {
     document.getElementById('totalSpentDisplay').textContent = `${curr}${totalCost.toFixed(2)}`;
     const catSum = document.getElementById('categorySummary'); const perSum = document.getElementById('personSummary'); catSum.innerHTML = ''; perSum.innerHTML = '';
     
-    if (totalCost === 0) { catSum.innerHTML = '<p class="empty-state-main" style="padding:10px;">Nothing spent yet.</p>'; perSum.innerHTML = '<p class="empty-state-main" style="padding:10px;">Nothing spent yet.</p>'; } 
+    if (totalCost === 0) { catSum.innerHTML = '<p class="text-sm text-on-surface-variant">Nothing spent.</p>'; perSum.innerHTML = '<p class="text-sm text-on-surface-variant">Nothing spent.</p>'; } 
     else {
-        Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
-            catSum.innerHTML += `<div class="loc-row" style="margin-bottom:6px;"><span class="loc-name" style="font-family:'DM Sans', sans-serif;">${window.sanitizeText(cat)}</span> <strong class="loc-amount" style="font-family:'DM Sans', sans-serif;">${curr}${amt.toFixed(2)}</strong></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width: ${(amt / totalCost) * 100}%"></div></div>`;
+        const colors = ['bg-primary', 'bg-tertiary', 'bg-secondary', 'bg-primary-dim'];
+        Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).forEach(([cat, amt], idx) => {
+            const colorClass = colors[idx % colors.length];
+            catSum.innerHTML += `<div class="space-y-1"><div class="flex justify-between text-sm font-label font-bold"><span>${window.sanitizeText(cat)}</span><span>${curr}${amt.toFixed(2)}</span></div><div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / totalCost) * 100}%"></div></div></div>`;
         });
         const sortedPersons = Object.entries(individualShare).sort((a, b) => b[1] - a[1]); const maxShare = sortedPersons.length > 0 ? sortedPersons[0][1] : 1; 
-        sortedPersons.forEach(([person, amt]) => {
-            perSum.innerHTML += `<div class="loc-row" style="margin-bottom:6px;"><span class="loc-name" style="font-family:'DM Sans', sans-serif;">${window.sanitizeText(person)}</span> <strong class="loc-amount" style="font-family:'DM Sans', sans-serif;">${curr}${amt.toFixed(2)}</strong></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width: ${(amt / maxShare) * 100}%; background: var(--success); box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div></div>`;
+        sortedPersons.forEach(([person, amt], idx) => {
+            const colorClass = colors[idx % colors.length];
+            perSum.innerHTML += `<div class="bg-white p-4 rounded-xl flex items-center gap-4 shadow-sm border-l-4 ${colorClass.replace('bg-', 'border-')}"><div class="flex-1 space-y-1"><div class="flex justify-between text-xs font-label font-bold"><span>${window.sanitizeText(person)}</span><span>${curr}${amt.toFixed(2)}</span></div><div class="h-1.5 w-full bg-surface-container-low rounded-full"><div class="h-full ${colorClass} rounded-full" style="width: ${(amt / maxShare) * 100}%"></div></div></div></div>`;
         });
     }
 
@@ -1482,16 +1099,16 @@ window.renderLedgerDetails = function() {
     const setList = document.getElementById('settlementList'); setList.innerHTML = '';
     document.getElementById('copySettlementsBtn').style.display = 'none';
     if (window.currentSettlements.length === 0) {
-        if (trip.expenses.length > 0) setList.innerHTML = '<div class="empty-state-main" style="color:var(--success); border-color:var(--success);">The scales are balanced.</div>';
-        else setList.innerHTML = '<div class="empty-state-main">Add expenses to reveal the balance.</div>';
+        if (trip.expenses.length > 0) setList.innerHTML = '<div class="p-4 border border-success bg-success/10 rounded-xl text-center text-sm font-label text-success font-bold">All settled up!</div>';
+        else setList.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">Add expenses first.</div>';
     } else {
         window.currentSettlements.forEach(s => {
-            setList.innerHTML += `<li class="ledger-li" style="flex-direction: column; align-items: flex-start;">
-                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-family:'DM Sans', sans-serif;">
-                    <span><strong style="color:var(--danger); font-weight:700;">${window.sanitizeText(s.from)}</strong> <span style="color:var(--text-muted); font-size:0.9rem; margin:0 4px;">→</span> <strong style="color:var(--success); font-weight:700;">${window.sanitizeText(s.to)}</strong></span>
-                    <span class="settlement-amount">${curr}${s.amount.toFixed(2)}</span>
+            setList.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-bold text-sm text-error">${window.sanitizeText(s.from)} <span class="text-on-surface-variant font-normal px-1">→</span> <span class="text-success">${window.sanitizeText(s.to)}</span></span>
+                    <span class="font-serif font-bold text-lg bg-surface-container-low px-2 rounded">${curr}${s.amount.toFixed(2)}</span>
                 </div>
-                <button class="settle-action-btn" style="width:100%;" onclick="window.executeSettlement('${window.sanitizeText(s.from).replace(/'/g, "\\'")}', '${window.sanitizeText(s.to).replace(/'/g, "\\'")}', ${s.amount})">Mark as Paid</button>
+                <button class="w-full bg-success/10 text-success font-bold text-sm py-2 rounded-lg hover:bg-success hover:text-white transition-colors" onclick="window.executeSettlement('${window.sanitizeText(s.from).replace(/'/g, "\\'")}', '${window.sanitizeText(s.to).replace(/'/g, "\\'")}', ${s.amount})">Mark as Paid</button>
             </li>`;
         });
         document.getElementById('copySettlementsBtn').style.display = 'flex'; 
