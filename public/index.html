@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -210,16 +209,6 @@
         }
         .back-to-paths:hover { color: var(--accent); }
 
-        /* Model Selector */
-        .model-chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-        .model-chip {
-            background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px;
-            padding: 8px 12px; font-size: 0.65rem; font-weight: 600; color: var(--text-muted);
-            cursor: pointer; transition: all 0.3s; font-family: 'Cinzel', serif; letter-spacing: 0.05em; flex-grow: 1; text-align: center;
-        }
-        .model-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(100,180,220,0.05); }
-        .model-chip.active { background: rgba(100,180,220,0.15); color: #c8e8f8; border-color: var(--accent); box-shadow: inset 0 0 15px var(--accent-glow); }
-
         .load-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .input-group { display: flex; gap: 12px; margin-bottom: 12px; }
 
@@ -425,7 +414,6 @@
             
             <div class="ledger-tabs" style="margin-bottom: 24px;">
                 <button class="tab-btn active" id="ptab-load" onclick="window.switchPortalTab('planner', 'load')">Open Grimoire</button>
-                <button class="tab-btn" id="ptab-new" onclick="window.switchPortalTab('planner', 'new')">Craft Journey</button>
             </div>
 
             <div id="planner-sec-load" class="tab-content active">
@@ -439,40 +427,6 @@
                     </button>
                 </div>
                 <div id="trips-status" style="margin-top:6px;"></div>
-            </div>
-
-            <div id="planner-sec-new" class="tab-content">
-                <p class="field-label">Craft New Journey</p>
-                <div style="display:flex;gap:12px;margin-bottom:12px;">
-                    <div style="flex:1;">
-                        <label class="field-label" style="font-size: 0.55rem; opacity: 0.8;">Date Range</label>
-                        <input type="text" id="trip-dates" placeholder="Oct 1 – Oct 10" class="field-input">
-                    </div>
-                    <div style="width:90px;">
-                        <label class="field-label" style="font-size: 0.55rem; opacity: 0.8;">Pax</label>
-                        <input type="number" id="trip-pax" placeholder="2" min="1" class="field-input">
-                    </div>
-                </div>
-
-                <div style="margin-bottom:16px;">
-                    <label class="field-label" style="font-size: 0.55rem; opacity: 0.8;">Your Trip Idea</label>
-                    <textarea id="trip-prompt" class="field-input" style="height:90px;" placeholder="A foodie trip to Penang focusing on hawker centres..."></textarea>
-                </div>
-
-                <div class="glass-card" style="padding: 16px; margin-bottom: 16px; background: rgba(0,0,0,0.2);">
-                    <p class="field-label" style="font-size: 0.55rem; opacity: 0.8; margin-bottom: 8px;">> Select Magic Engine:</p>
-                    <div class="model-chip-group">
-                        <button type="button" class="model-chip" data-value="gemini-2.0-flash">2.0 FLASH</button>
-                        <button type="button" class="model-chip active" data-value="gemini-2.5-flash">2.5 FLASH</button>
-                        <button type="button" class="model-chip" data-value="gemini-2.5-pro">2.5 PRO</button>
-                        <button type="button" class="model-chip" data-value="gemini-3-flash-preview">3 FLASH (NEXT)</button>
-                    </div>
-                    <input type="hidden" id="modelSelect" value="gemini-2.5-flash">
-                </div>
-
-                <button id="generate-btn" onclick="window.generateTrip()" class="btn-primary">
-                    <i data-lucide="sparkles" style="width:16px;height:16px;"></i> BEGIN JOURNEY
-                </button>
             </div>
         </div>
 
@@ -527,10 +481,6 @@
                 <div class="header-meta" id="header-meta"></div>
             </div>
             <div class="header-actions">
-                <button onclick="window.toggleChatModal()" class="icon-btn">
-                    <i data-lucide="pen-line" style="width:14px;height:14px;"></i>
-                    <span style="display:none;" id="ai-edit-label">AI Edit</span>
-                </button>
                 <button onclick="window.copyPlannerLink()" class="icon-btn">
                     <i data-lucide="link" style="width:14px;height:14px;"></i>
                 </button>
@@ -643,20 +593,6 @@
 </main>
 
 
-<div id="ai-chat-modal" class="fixed-modal">
-    <div class="modal-card">
-        <button class="modal-close" onclick="window.toggleChatModal()"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
-        <p class="field-label">AI Editor</p>
-        <div class="modal-title">Edit Itinerary</div>
-        <div class="modal-subtitle">Ask Gemini to change anything — "Switch day 2 lunch to sushi", "Make day 3 all shopping", "Find a cheaper hotel".</div>
-        <textarea id="edit-prompt" class="field-input" style="height:110px;margin-bottom:14px;" placeholder="Your instructions…"></textarea>
-        <button id="submit-edit-btn" onclick="window.submitEdit()" class="btn-primary">
-            <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Update Itinerary
-        </button>
-        <p id="chat-loading" style="display:none;text-align:center;font-size:0.82rem;color:var(--accent);margin-top:12px;font-style:italic;">Rewriting itinerary…</p>
-    </div>
-</div>
-
 <div id="delete-modal" class="fixed-modal">
     <div class="modal-card" style="max-width:360px; text-align: center;">
         <div class="modal-title" style="margin-bottom:8px;">Erase Journey?</div>
@@ -674,7 +610,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebas
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-functions.js";
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -697,7 +632,6 @@ const appCheck = initializeAppCheck(app, {
     
 const db = getFirestore(app);
 const auth = getAuth(app);
-const functions = getFunctions(app);
 
 // ============================================================
 //  SHARED STATE & UTILS
@@ -751,13 +685,16 @@ window.switchPortalTab = function(portalType, section) {
     const pfix = portalType === 'planner' ? 'ptab' : 'ltab';
     const sfix = portalType === 'planner' ? 'planner-sec' : 'ledger-sec';
 
-    document.getElementById(`${pfix}-load`).classList.remove('active');
-    document.getElementById(`${pfix}-new`).classList.remove('active');
-    document.getElementById(`${pfix}-${section}`).classList.add('active');
+    const safeRemove = (id) => { const el = document.getElementById(id); if (el) el.classList.remove('active'); };
+    const safeAdd = (id) => { const el = document.getElementById(id); if (el) el.classList.add('active'); };
 
-    document.getElementById(`${sfix}-load`).classList.remove('active');
-    document.getElementById(`${sfix}-new`).classList.remove('active');
-    document.getElementById(`${sfix}-${section}`).classList.add('active');
+    safeRemove(`${pfix}-load`);
+    safeRemove(`${pfix}-new`);
+    safeAdd(`${pfix}-${section}`);
+
+    safeRemove(`${sfix}-load`);
+    safeRemove(`${sfix}-new`);
+    safeAdd(`${sfix}-${section}`);
 }
 
 function parseJSON(text) {
@@ -823,17 +760,6 @@ window.softReset = function() {
 document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
     window.initTitleParticles();
-
-    if (window.innerWidth > 500) { document.getElementById('ai-edit-label').style.display = 'inline'; }
-
-    document.querySelectorAll('.model-chip').forEach(chip => {
-        chip.addEventListener('click', (e) => {
-            const group = e.target.closest('.model-chip-group');
-            group.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
-            e.target.classList.add('active');
-            document.getElementById('modelSelect').value = e.target.dataset.value;
-        });
-    });
 });
 
 // ============================================================
@@ -870,7 +796,7 @@ onAuthStateChanged(auth, user => {
 
 
 // ============================================================
-//  APP 1: PLANNER LOGIC (FIRESTORE + CLOUD FUNCTIONS)
+//  APP 1: PLANNER LOGIC (FIRESTORE)
 // ============================================================
 window.tripData = null;
 window.activeFilter = 'all';
@@ -933,54 +859,6 @@ window.loadPastTrip = async function(forcedId = null) {
             }, 1500);
         } else { window.showToast('Failed to load trip: Record not found.', 'error'); }
     } catch (err) { window.showToast('Magic interrupted. Check network or database rules.', 'error'); console.error(err); } 
-    finally { window.hideLoading(); }
-}
-
-window.generateTrip = async function() {
-    const prompt = document.getElementById('trip-prompt').value.trim();
-    const dates = document.getElementById('trip-dates').value.trim() || 'TBD';
-    const pax = document.getElementById('trip-pax').value.trim() || '1';
-    const model = document.getElementById('modelSelect').value;
-
-    if (!prompt) return window.showToast('Please describe your journey first!', 'warning');
-
-    window.showLoading('Consulting the grimoires to map your journey…');
-    try {
-        const generateTripFunction = httpsCallable(functions, 'generateTrip');
-        const response = await generateTripFunction({
-            prompt: prompt,
-            dates: dates,
-            pax: pax,
-            modelId: model
-        });
-
-        const responseText = response.data.result;
-        let parsed = parseJSON(responseText);
-        
-        if (parsed) {
-            // Give it an ID and save to Firestore immediately
-            const newDocRef = doc(collection(db, "planner_trips"));
-            parsed.id = newDocRef.id;
-            await setDoc(newDocRef, parsed);
-            
-            window.tripData = parsed;
-            
-            const url = new URL(window.location);
-            url.searchParams.set('planner', window.tripData.id);
-            url.searchParams.delete('ledger');
-            window.history.pushState({}, '', url);
-
-            window.hideOverlay();
-            setTimeout(() => {
-                document.getElementById('main-header').style.display = 'block';
-                document.getElementById('planner-content').style.display = 'block';
-                window.initPlannerUI();
-            }, 1500);
-        } else { window.showToast('Magic failed parsing', 'error'); }
-    } catch (err) { 
-        window.showToast('Magic interrupted. Check network, API key, or Firebase rules.', 'error'); 
-        console.error("AI Gen Error:", err); 
-    } 
     finally { window.hideLoading(); }
 }
 
@@ -1051,35 +929,6 @@ window.setFilter = function(filterId) {
     window.renderPlannerFilters(); window.renderPlannerContent(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Modal & Delete Logic
-window.toggleChatModal = function() { document.getElementById('ai-chat-modal').classList.toggle('show'); }
-window.submitEdit = async function() {
-    const prompt = document.getElementById('edit-prompt').value.trim();
-    if(!prompt) return;
-    document.getElementById('submit-edit-btn').disabled = true; document.getElementById('chat-loading').style.display = 'block';
-    
-    try {
-        const model = document.getElementById('modelSelect').value;
-        const editTripFunction = httpsCallable(functions, 'editTrip');
-        const response = await editTripFunction({
-            prompt: prompt,
-            currentTripData: window.tripData,
-            modelId: model
-        });
-
-        const responseText = response.data.result;
-        let parsed = parseJSON(responseText);
-        
-        if(parsed){ 
-            parsed.id = window.tripData.id; // Keep original ID
-            window.tripData = parsed; 
-            await setDoc(doc(db, "planner_trips", window.tripData.id), window.tripData);
-            document.getElementById('edit-prompt').value=''; 
-            window.toggleChatModal(); window.initPlannerUI(); window.showToast('Itinerary updated!','success');
-        }
-    } catch(err) { console.error(err); window.showToast('Failed to modify trip.', 'error'); } 
-    finally { document.getElementById('submit-edit-btn').disabled = false; document.getElementById('chat-loading').style.display = 'none'; }
-}
 window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.sanitizeText(window.tripData.overview.title)}" will be permanently erased.`; document.getElementById('delete-modal').style.display = 'flex'; }
 window.closeDeleteModal = function() { document.getElementById('delete-modal').style.display = 'none'; }
 window.confirmDeletePlanner = async function() {
