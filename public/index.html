@@ -598,6 +598,9 @@ document.addEventListener('click', (e) => {
     const plannerView = document.getElementById('planner-view');
     if (!plannerView || plannerView.classList.contains('hidden')) return;
 
+    // FIX: Do not intercept clicks if the user clicked a hyperlink
+    if (e.target.closest('a')) return;
+
     const target = e.target.closest('.needs-edit-mode');
     if (target && !window.isEditMode && target.tagName !== 'INPUT') {
         e.preventDefault(); e.stopPropagation();
@@ -723,14 +726,17 @@ window.updateEventLocation = async function(dayNum, idx, val) {
     if (val.trim()) {
         window.showToast("Locating place on map...", "info", 1500);
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}`);
+            // Photon API by Komoot is much more typo-tolerant than standard Nominatim
+            const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&limit=1`);
             const data = await res.json();
-            if (data && data.length > 0) {
-                event.latlng = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            if (data && data.features && data.features.length > 0) {
+                // Photon returns [longitude, latitude]
+                const coords = data.features[0].geometry.coordinates;
+                event.latlng = [parseFloat(coords[1]), parseFloat(coords[0])]; // Convert to Leaflet format [lat, lon]
                 window.showToast("Location found & mapped!", "success");
             } else {
                 event.latlng = null;
-                window.showToast("Location not found. Try a broader search.", "error");
+                window.showToast("Location not found. Try adding the city name.", "error");
             }
         } catch (e) {
             event.latlng = null;
@@ -948,7 +954,7 @@ window.renderTimeline = function() {
 
             let locationHtml = '';
             if (window.isEditMode) {
-                locationHtml = `<div class="mt-2 flex items-center gap-2"><i data-lucide="map-pin" class="text-on-surface-variant shrink-0" style="width:14px;"></i><input type="text" class="text-xs bg-surface-container-low border border-outline-variant/30 focus:border-primary focus:ring-0 rounded px-2 py-1.5 flex-1 needs-edit-mode outline-none" placeholder="Type a place to map it..." value="${window.sanitizeText(event.locationQuery || '')}" onchange="window.updateEventLocation(${day.day}, ${idx}, this.value)"></div>`;
+                locationHtml = `<div class="mt-2 flex items-center gap-2"><i data-lucide="map-pin" class="text-on-surface-variant shrink-0" style="width:14px;"></i><input type="text" class="text-xs bg-surface-container-low border border-outline-variant/30 focus:border-primary focus:ring-0 rounded px-2 py-1.5 flex-1 needs-edit-mode outline-none" placeholder="Type place + city (e.g. Ginza Honten, Tokyo)..." value="${window.sanitizeText(event.locationQuery || '')}" onchange="window.updateEventLocation(${day.day}, ${idx}, this.value)"></div>`;
             } else if (event.locationQuery) {
                 locationHtml = `<div class="text-[10px] text-on-surface-variant flex items-center gap-1 mt-1.5 font-label"><i data-lucide="map-pin" style="width:12px;"></i> ${window.sanitizeText(event.locationQuery)}</div>`;
             }
