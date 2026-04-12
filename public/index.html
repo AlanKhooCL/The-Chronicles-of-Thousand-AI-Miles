@@ -105,8 +105,11 @@
         [contenteditable="true"]:focus { background-color: #fff; box-shadow: 0 0 0 2px rgba(37,98,150,0.2); }
         
         .needs-edit-mode { transition: all 0.2s; }
-        .needs-edit-mode:not([contenteditable="true"]):not(:focus):not(input):hover { cursor: not-allowed; opacity: 0.8; }
+        .needs-edit-mode:not([contenteditable="true"]):not(:focus):not(input):not(select):hover { cursor: not-allowed; opacity: 0.8; }
         
+        /* Drag and Drop Helpers */
+        .drag-over { border-top: 2px dashed var(--primary) !important; padding-top: 14px !important; }
+
         .field-input, .select-input {
             width: 100%; border: none; border-bottom: 2px solid var(--outline-variant); 
             background: transparent; padding: 12px 16px; font-size: 1rem;
@@ -399,9 +402,14 @@
         </div>
 
         <div id="tab-shopping" class="hidden space-y-8">
-            <header class="flex items-center gap-2">
-                <div class="w-1 h-5 bg-secondary-container"></div>
-                <h3 class="font-headline text-xl font-bold italic text-on-surface">Target Acquisitions</h3>
+            <header class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-5 bg-secondary-container"></div>
+                    <h3 class="font-headline text-xl font-bold italic text-on-surface">Target Acquisitions</h3>
+                </div>
+                <button id="shop-edit-btn" onclick="window.toggleShoppingEditMode()" class="px-4 py-2 font-bold rounded-full text-xs transition-colors flex items-center gap-1 bg-surface-container-low text-on-surface-variant hover:bg-primary/10">
+                    <i data-lucide="edit-3" style="width:14px;"></i> <span>Edit</span>
+                </button>
             </header>
 
             <section class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-outline-variant/20">
@@ -426,12 +434,19 @@
                             <input type="number" id="shopActualPrice" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full font-serif text-xl" placeholder="0.00" step="0.01">
                         </div>
                     </div>
+
+                    <select id="shopStatus" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full font-label text-sm font-bold" required>
+                        <option value="Not Decided" selected>Status: Not Decided</option>
+                        <option value="Buy">Status: Buy</option>
+                        <option value="Not Worth">Status: Not Worth</option>
+                    </select>
                     
                     <button type="submit" class="btn-primary w-full h-14 text-lg mt-2">Log Item</button>
                 </form>
             </section>
 
             <section>
+                <div id="shoppingParticipantTabs" class="flex gap-2 overflow-x-auto pb-4 no-scrollbar"></div>
                 <ul id="shoppingListContainer" class="space-y-3"></ul>
             </section>
         </div>
@@ -573,6 +588,7 @@ window.hideOverlay = function() {
 
 window.softReset = function() {
     window.tripData = null; window.activeFilter = 'all'; window.isEditMode = false;
+    window.isShoppingEditMode = false;
     Object.values(window.mapInstances || {}).forEach(m => { try { m.remove(); } catch(_){} });
     window.mapInstances = {}; window.openMaps = new Set();
     
@@ -634,20 +650,26 @@ window.getTheme = function(colorKey) { return themeStyles[colorKey] || themeStyl
 
 // Edit Mode Interceptor
 document.addEventListener('click', (e) => {
-    const plannerView = document.getElementById('planner-view');
-    if (!plannerView || plannerView.classList.contains('hidden')) return;
-
-    if (e.target.closest('a')) return;
-
     const target = e.target.closest('.needs-edit-mode');
-    if (target && !window.isEditMode && target.tagName !== 'INPUT') {
+    if (!target || target.tagName === 'INPUT' || target.tagName === 'SELECT') return;
+
+    const plannerView = document.getElementById('planner-view');
+    const ledgerView = document.getElementById('ledger-view');
+
+    if (plannerView && !plannerView.classList.contains('hidden') && !window.isEditMode) {
         e.preventDefault(); e.stopPropagation();
-        window.showEditTooltip();
+        window.showEditTooltip('edit-mode-btn');
+    } else if (ledgerView && !ledgerView.classList.contains('hidden') && !window.isShoppingEditMode) {
+        const shopTab = document.getElementById('tab-shopping');
+        if (shopTab && !shopTab.classList.contains('hidden') && target.closest('#shoppingListContainer')) {
+            e.preventDefault(); e.stopPropagation();
+            window.showEditTooltip('shop-edit-btn');
+        }
     }
 }, true);
 
-window.showEditTooltip = function() {
-    const btn = document.getElementById('edit-mode-btn');
+window.showEditTooltip = function(btnId = 'edit-mode-btn') {
+    const btn = document.getElementById(btnId);
     if(!btn) return;
     btn.classList.add('ring-4', 'ring-primary/50', 'scale-105');
     setTimeout(() => btn.classList.remove('ring-4', 'ring-primary/50', 'scale-105'), 1000);
@@ -1076,6 +1098,11 @@ window.currentSettlements = [];
 window.chartInstance = null;
 window.ledgerFilterPerson = null;
 
+// New Shopping App Variables
+window.shoppingParticipantFilter = 'All';
+window.isShoppingEditMode = false;
+window.draggedItemIndex = null;
+
 window.fetchLedgerTrips = async function() {
     const listEl = document.getElementById('ledgerList'); const msgEl = document.getElementById('ledgerLoadingMsg');
     msgEl.classList.remove('hidden'); listEl.innerHTML = '';
@@ -1104,7 +1131,6 @@ window.createLedger = async function(e) {
     window.openLedger(newTrip.id); await setDoc(newDocRef, newTrip);
 }
 
-// UPDATE: Added 'shopping' to tab switches
 window.switchLedgerTab = function(tabId) {
     ['dash', 'party', 'ledger', 'settle', 'shopping'].forEach(id => {
         const btn = document.getElementById(`tabbtn-${id}`); const sec = document.getElementById(`tab-${id}`);
@@ -1229,7 +1255,31 @@ window.toggleLedgerFilter = function(person) {
     window.renderLedgerDetails();
 }
 
-// NEW: Shopping List Logic
+// ============================================================
+//  NEW: SHOPPING LIST LOGIC
+// ============================================================
+window.toggleShoppingEditMode = function() {
+    window.isShoppingEditMode = !window.isShoppingEditMode;
+    const btn = document.getElementById('shop-edit-btn');
+    if (window.isShoppingEditMode) {
+        btn.classList.add('bg-primary', 'text-white');
+        btn.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
+        btn.innerHTML = `<i data-lucide="check" style="width:14px;"></i> <span>Done</span>`;
+    } else {
+        btn.classList.remove('bg-primary', 'text-white');
+        btn.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        btn.innerHTML = `<i data-lucide="edit-3" style="width:14px;"></i> <span>Edit</span>`;
+    }
+    lucide.createIcons({nodes: [btn]});
+    window.renderLedgerDetails();
+    window.showToast(window.isShoppingEditMode ? "Shopping Edit Mode Enabled" : "Edit Mode Disabled", "info");
+}
+
+window.setShoppingFilter = function(participant) {
+    window.shoppingParticipantFilter = participant;
+    window.renderLedgerDetails();
+}
+
 window.saveShoppingItem = function(e) {
     e.preventDefault();
     const trip = window.getActiveLedger();
@@ -1244,6 +1294,7 @@ window.saveShoppingItem = function(e) {
         location: document.getElementById('shopLocation').value.trim(),
         onlinePrice: parseFloat(document.getElementById('shopOnlinePrice').value) || 0,
         actualPrice: parseFloat(document.getElementById('shopActualPrice').value) || 0,
+        status: document.getElementById('shopStatus').value,
         timestamp: Date.now()
     };
 
@@ -1251,8 +1302,20 @@ window.saveShoppingItem = function(e) {
     
     window.renderLedgerDetails(); 
     e.target.reset(); 
+    document.getElementById('shopStatus').value = 'Not Decided';
     window.saveLedgerData(trip); 
     window.showToast('Item saved', 'success');
+}
+
+window.updateShopItemField = function(itemId, field, value) {
+    const trip = window.getActiveLedger();
+    const item = trip.shoppingList.find(i => i.id === itemId);
+    if (item) {
+        if (field === 'onlinePrice' || field === 'actualPrice') item[field] = parseFloat(value) || 0;
+        else item[field] = value;
+        window.saveLedgerData(trip);
+        window.renderLedgerDetails();
+    }
 }
 
 window.deleteShoppingItem = function(itemId) {
@@ -1263,6 +1326,47 @@ window.deleteShoppingItem = function(itemId) {
     window.saveLedgerData(trip);
 }
 
+// Drag and Drop implementation
+window.onShopDragStart = function(e, index) {
+    if (!window.isShoppingEditMode) { e.preventDefault(); return; }
+    window.draggedItemIndex = index;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => e.target.classList.add('opacity-50'), 0);
+};
+
+window.onShopDragOver = function(e) {
+    e.preventDefault();
+    const li = e.target.closest('li');
+    if (li) li.classList.add('drag-over');
+};
+
+window.onShopDragLeave = function(e) {
+    const li = e.target.closest('li');
+    if (li) li.classList.remove('drag-over');
+};
+
+window.onShopDrop = function(e, dropIndex) {
+    e.preventDefault();
+    const li = e.target.closest('li');
+    if (li) li.classList.remove('drag-over');
+
+    const dragIndex = window.draggedItemIndex;
+    if (dragIndex === null || dragIndex === dropIndex) return;
+
+    const trip = window.getActiveLedger();
+    const draggedItem = trip.shoppingList.splice(dragIndex, 1)[0];
+    trip.shoppingList.splice(dropIndex, 0, draggedItem);
+
+    window.saveLedgerData(trip);
+    window.renderLedgerDetails();
+};
+
+window.onShopDragEnd = function(e) {
+    e.target.classList.remove('opacity-50');
+    window.draggedItemIndex = null;
+}
+
+// Chart Render
 window.renderDebtChart = function(trip) {
     const ctx = document.getElementById('debtChart').getContext('2d');
     if (window.chartInstance) window.chartInstance.destroy();
@@ -1366,18 +1470,33 @@ window.renderLedgerDetails = function() {
     // NEW: Shopping List Rendering Integration
     const shopListCont = document.getElementById('shoppingListContainer');
     const shopParticipant = document.getElementById('shopParticipant');
+    const shopTabsContainer = document.getElementById('shoppingParticipantTabs');
     
-    shopListCont.innerHTML = '';
     shopParticipant.innerHTML = '<option value="" disabled selected>-- Participant --</option>';
+
+    let tabsHtml = `<button onclick="window.setShoppingFilter('All')" class="px-4 py-2 font-label text-sm font-bold rounded-full whitespace-nowrap shrink-0 transition-colors ${window.shoppingParticipantFilter === 'All' ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">All Items</button>`;
 
     trip.users.forEach(user => {
         shopParticipant.innerHTML += `<option value="${window.sanitizeText(user)}">${window.sanitizeText(user)}</option>`;
+        tabsHtml += `<button onclick="window.setShoppingFilter('${window.sanitizeText(user).replace(/'/g, "\\'")}')" class="px-4 py-2 font-label text-sm font-bold rounded-full whitespace-nowrap shrink-0 transition-colors ${window.shoppingParticipantFilter === user ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high'}">${window.sanitizeText(user)}</button>`;
     });
 
-    if (!trip.shoppingList || trip.shoppingList.length === 0) {
+    shopTabsContainer.innerHTML = tabsHtml;
+
+    const isFiltered = window.shoppingParticipantFilter !== 'All';
+    let listToRender = trip.shoppingList || [];
+    
+    if (isFiltered) {
+        listToRender = listToRender.filter(i => i.participant === window.shoppingParticipantFilter);
+    }
+
+    shopListCont.innerHTML = '';
+
+    if (listToRender.length === 0) {
         shopListCont.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">List is empty.</div>';
     } else {
-        trip.shoppingList.forEach(item => {
+        listToRender.forEach(item => {
+            const originalIndex = trip.shoppingList.findIndex(i => i.id === item.id);
             const priceDiff = item.onlinePrice > 0 && item.actualPrice > 0 ? (item.onlinePrice - item.actualPrice) : null;
             let priceBadge = '';
             
@@ -1386,22 +1505,56 @@ window.renderLedgerDetails = function() {
                 else if (priceDiff < 0) priceBadge = `<span class="text-[10px] font-bold text-error bg-error/10 px-2 py-1 rounded">Overpaid ${Math.abs(priceDiff).toFixed(2)}</span>`;
             }
 
-            shopListCont.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20 relative group">
-                <button onclick="window.deleteShoppingItem('${item.id}')" class="absolute top-4 right-4 text-outline-variant hover:text-error transition-colors"><i data-lucide="x" style="width:16px;"></i></button>
+            let statusColor = "bg-surface-container-high text-on-surface-variant";
+            if (item.status === 'Buy') statusColor = "bg-success/10 text-success border-success/30 border";
+            else if (item.status === 'Not Worth') statusColor = "bg-error/10 text-error border-error/30 border";
+
+            const editableClass = window.isShoppingEditMode ? "" : "needs-edit-mode";
+            const contentEditableStr = window.isShoppingEditMode ? 'contenteditable="true"' : '';
+            const readonlyStr = window.isShoppingEditMode ? '' : 'readonly';
+            const draggableStr = (window.isShoppingEditMode && !isFiltered) ? 'draggable="true"' : '';
+
+            shopListCont.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20 relative group transition-all"
+                ${draggableStr}
+                ondragstart="window.onShopDragStart(event, ${originalIndex})"
+                ondragover="window.onShopDragOver(event)"
+                ondragleave="window.onShopDragLeave(event)"
+                ondrop="window.onShopDrop(event, ${originalIndex})"
+                ondragend="window.onShopDragEnd(event)">
+                
+                ${(window.isShoppingEditMode && !isFiltered) ? `<div class="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab text-outline-variant hover:text-primary"><i data-lucide="grip-vertical" style="width:16px;"></i></div>` : ''}
+
+                <button onclick="window.deleteShoppingItem('${item.id}')" class="absolute top-4 right-4 text-outline-variant hover:text-error transition-colors ${window.isShoppingEditMode ? 'block' : 'hidden'}"><i data-lucide="x" style="width:16px;"></i></button>
+                
                 <div class="pr-8">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-primary">${window.sanitizeText(item.participant)}</span>
-                    <h4 class="font-bold text-lg leading-tight mt-0.5 text-on-surface">${window.sanitizeText(item.itemName)}</h4>
-                    ${item.location ? `<div class="text-xs text-on-surface-variant flex items-center gap-1 mt-1.5 font-label"><i data-lucide="map-pin" style="width:12px;"></i> ${window.sanitizeText(item.location)}</div>` : ''}
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary">${window.sanitizeText(item.participant)}</span>
+                        ${window.isShoppingEditMode ? `
+                            <select class="text-[10px] font-bold uppercase p-0.5 rounded border border-outline-variant/30 bg-surface-container-low outline-none focus:border-primary" onchange="window.updateShopItemField('${item.id}', 'status', this.value)">
+                                <option value="Not Decided" ${item.status === 'Not Decided' ? 'selected' : ''}>Not Decided</option>
+                                <option value="Buy" ${item.status === 'Buy' ? 'selected' : ''}>Buy</option>
+                                <option value="Not Worth" ${item.status === 'Not Worth' ? 'selected' : ''}>Not Worth</option>
+                            </select>
+                        ` : `<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${statusColor}">${window.sanitizeText(item.status || 'Not Decided')}</span>`}
+                    </div>
+                    
+                    <div class="font-bold text-lg leading-tight mt-0.5 text-on-surface ${editableClass} outline-none border-b border-transparent focus:border-primary/50 break-words" ${contentEditableStr} onblur="window.updateShopItemField('${item.id}', 'itemName', this.innerText)">${window.sanitizeText(item.itemName)}</div>
+                    
+                    <div class="text-xs text-on-surface-variant flex items-center gap-1 mt-1.5 font-label">
+                        <i data-lucide="map-pin" style="width:12px;" class="shrink-0"></i>
+                        <div class="${editableClass} outline-none border-b border-transparent focus:border-primary/50 break-words w-full" ${contentEditableStr} onblur="window.updateShopItemField('${item.id}', 'location', this.innerText)">${window.sanitizeText(item.location || 'Add location...')}</div>
+                    </div>
                 </div>
+                
                 <div class="flex items-end justify-between mt-4 border-t border-outline-variant/20 pt-3">
                     <div class="flex gap-4">
                         <div>
                             <p class="text-[10px] uppercase font-bold text-on-surface-variant">Online</p>
-                            <p class="font-serif text-lg ${item.onlinePrice ? 'text-on-surface' : 'text-on-surface-variant opacity-50'}">${item.onlinePrice ? item.onlinePrice.toFixed(2) : '---'}</p>
+                            <input type="number" step="0.01" class="${editableClass} font-serif text-lg bg-transparent border-none p-0 w-20 focus:ring-0 ${item.onlinePrice ? 'text-on-surface' : 'text-on-surface-variant opacity-50'}" value="${item.onlinePrice || 0}" ${readonlyStr} onchange="window.updateShopItemField('${item.id}', 'onlinePrice', this.value)">
                         </div>
                         <div>
                             <p class="text-[10px] uppercase font-bold text-on-surface-variant">Actual</p>
-                            <p class="font-serif text-lg ${item.actualPrice ? 'text-primary font-bold' : 'text-on-surface-variant opacity-50'}">${item.actualPrice ? item.actualPrice.toFixed(2) : '---'}</p>
+                            <input type="number" step="0.01" class="${editableClass} font-serif text-lg bg-transparent border-none p-0 w-20 focus:ring-0 ${item.actualPrice ? 'text-primary font-bold' : 'text-on-surface-variant opacity-50'}" value="${item.actualPrice || 0}" ${readonlyStr} onchange="window.updateShopItemField('${item.id}', 'actualPrice', this.value)">
                         </div>
                     </div>
                     ${priceBadge}
@@ -1410,8 +1563,8 @@ window.renderLedgerDetails = function() {
         });
     }
 
-    // Initialize all icons, including the new shopping list ones
-    lucide.createIcons({ nodes: [expLog, userList, shopListCont] });
+    // Initialize all icons
+    lucide.createIcons({ nodes: [expLog, userList, shopListCont, document.getElementById('tab-shopping')] });
     
     window.renderDebtChart(trip);
 
