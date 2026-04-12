@@ -303,6 +303,7 @@
             <button id="tabbtn-party" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('party')">Party</button>
             <button id="tabbtn-ledger" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('ledger')">Ledger</button>
             <button id="tabbtn-settle" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('settle')">Settle</button>
+            <button id="tabbtn-shopping" class="px-2 py-3 text-sm text-on-surface-variant font-label hover:text-primary whitespace-nowrap shrink-0" onclick="window.switchLedgerTab('shopping')">Shopping</button>
         </nav>
 
         <div id="tab-dash" class="block space-y-8">
@@ -396,6 +397,44 @@
             <ul id="settlementList" class="space-y-4"></ul>
             <button id="copySettlementsBtn" class="btn-secondary w-full" style="display:none;" onclick="window.copySettlements()"><i data-lucide="copy" style="width:16px;"></i> Copy for Messaging</button>
         </div>
+
+        <div id="tab-shopping" class="hidden space-y-8">
+            <header class="flex items-center gap-2">
+                <div class="w-1 h-5 bg-secondary-container"></div>
+                <h3 class="font-headline text-xl font-bold italic text-on-surface">Target Acquisitions</h3>
+            </header>
+
+            <section class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-outline-variant/20">
+                <h3 class="font-headline text-xl font-bold italic text-on-surface mb-4">Add to List</h3>
+                <form id="addShoppingForm" class="space-y-4" onsubmit="window.saveShoppingItem(event)">
+                    <select id="shopParticipant" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full" required></select>
+                    
+                    <input type="text" id="shopItemName" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full" placeholder="What are we buying?" required>
+                    
+                    <div class="flex items-center gap-2 bg-surface-container-low rounded-lg px-2">
+                        <i data-lucide="map-pin" class="text-on-surface-variant w-4 shrink-0 pl-2"></i>
+                        <input type="text" id="shopLocation" class="field-input border-none h-12 px-2 w-full focus:bg-transparent" placeholder="Location (e.g., Don Quijote)">
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <div class="w-1/2">
+                            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest pt-2 pl-1">Online Price</p>
+                            <input type="number" id="shopOnlinePrice" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full font-serif text-xl" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="w-1/2">
+                            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest pt-2 pl-1">Actual Price</p>
+                            <input type="number" id="shopActualPrice" class="field-input bg-surface-container-low border-none rounded-lg h-12 px-4 w-full font-serif text-xl" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-full h-14 text-lg mt-2">Log Item</button>
+                </form>
+            </section>
+
+            <section>
+                <ul id="shoppingListContainer" class="space-y-3"></ul>
+            </section>
+        </div>
     </main>
 
     <div id="edit-confirm-modal" class="fixed-modal">
@@ -441,7 +480,7 @@ const appCheck = initializeAppCheck(app, { provider: new ReCaptchaV3Provider('6L
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Default Seed Data - Updated to include title and desc, and start/end dates
+// Default Seed Data
 const defaultTripData = {
     overview: { title: "New Journey", dates: "", startDate: "", endDate: "", pax: "2" },
     budget: [
@@ -598,7 +637,6 @@ document.addEventListener('click', (e) => {
     const plannerView = document.getElementById('planner-view');
     if (!plannerView || plannerView.classList.contains('hidden')) return;
 
-    // FIX: Do not intercept clicks if the user clicked a hyperlink
     if (e.target.closest('a')) return;
 
     const target = e.target.closest('.needs-edit-mode');
@@ -726,13 +764,11 @@ window.updateEventLocation = async function(dayNum, idx, val) {
     if (val.trim()) {
         window.showToast("Locating place on map...", "info", 1500);
         try {
-            // Photon API by Komoot is much more typo-tolerant than standard Nominatim
             const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&limit=1`);
             const data = await res.json();
             if (data && data.features && data.features.length > 0) {
-                // Photon returns [longitude, latitude]
                 const coords = data.features[0].geometry.coordinates;
-                event.latlng = [parseFloat(coords[1]), parseFloat(coords[0])]; // Convert to Leaflet format [lat, lon]
+                event.latlng = [parseFloat(coords[1]), parseFloat(coords[0])]; // [lat, lon]
                 window.showToast("Location found & mapped!", "success");
             } else {
                 event.latlng = null;
@@ -790,7 +826,7 @@ window.renderPlannerHeader = function() {
         dateHtml = `<input type="date" class="bg-transparent text-[10px] sm:text-xs outline-none w-auto max-w-[110px]" value="${startD}" onchange="window.updatePlannerStartDate(this.value)"> <span class="mx-1 font-normal">-</span> <input type="date" class="bg-transparent text-[10px] sm:text-xs outline-none w-auto max-w-[110px]" value="${endD}" onchange="window.updatePlannerEndDate(this.value)">`;
     } else {
         if (!startD && !endD && window.tripData.overview.dates) {
-            dateHtml = window.sanitizeText(window.tripData.overview.dates); // Fallback for old saves
+            dateHtml = window.sanitizeText(window.tripData.overview.dates);
         } else {
             dateHtml = `${startD} ${endD ? 'to ' + endD : ''}`;
         }
@@ -845,7 +881,6 @@ window.setFilter = function(filterId) {
     window.renderPlannerFilters(); window.renderPlannerContent(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Planner Deletion
 window.openDeleteModal = function() { document.getElementById('delete-modal-msg').textContent = `"${window.sanitizeText(window.tripData.overview.title)}" will be permanently erased.`; document.getElementById('delete-modal').classList.add('show'); }
 window.closeDeleteModal = function() { document.getElementById('delete-modal').classList.remove('show'); }
 window.confirmDeletePlanner = async function() {
@@ -942,14 +977,14 @@ window.renderTimeline = function() {
             let displayTitle = rawTitle;
             let displayDesc = rawDesc;
             
-            // Link detection logic (Removes URL from description entirely, puts link in Title)
+            // Link detection logic
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             const urls = rawDesc.match(urlRegex);
             
             if (!window.isEditMode && urls && urls.length > 0) {
                 const detectedLink = urls[0];
                 displayTitle = `<a href="${detectedLink}" target="_blank" class="text-primary hover:underline">${rawTitle}</a>`;
-                displayDesc = rawDesc.replace(urlRegex, '').trim(); // Remove link string from text
+                displayDesc = rawDesc.replace(urlRegex, '').trim(); 
             }
 
             let locationHtml = '';
@@ -1069,8 +1104,9 @@ window.createLedger = async function(e) {
     window.openLedger(newTrip.id); await setDoc(newDocRef, newTrip);
 }
 
+// UPDATE: Added 'shopping' to tab switches
 window.switchLedgerTab = function(tabId) {
-    ['dash', 'party', 'ledger', 'settle'].forEach(id => {
+    ['dash', 'party', 'ledger', 'settle', 'shopping'].forEach(id => {
         const btn = document.getElementById(`tabbtn-${id}`); const sec = document.getElementById(`tab-${id}`);
         if(id === tabId) { btn.classList.add('text-primary', 'border-primary', 'border-b-2'); btn.classList.remove('text-on-surface-variant'); sec.classList.remove('hidden'); }
         else { btn.classList.remove('text-primary', 'border-primary', 'border-b-2'); btn.classList.add('text-on-surface-variant'); sec.classList.add('hidden'); }
@@ -1193,6 +1229,40 @@ window.toggleLedgerFilter = function(person) {
     window.renderLedgerDetails();
 }
 
+// NEW: Shopping List Logic
+window.saveShoppingItem = function(e) {
+    e.preventDefault();
+    const trip = window.getActiveLedger();
+    if (trip.users.length === 0) return window.showToast("Add people in the Party tab first!", 'error');
+
+    if (!trip.shoppingList) trip.shoppingList = [];
+
+    const newItem = {
+        id: 'SHOP_' + Date.now(),
+        participant: document.getElementById('shopParticipant').value,
+        itemName: document.getElementById('shopItemName').value.trim(),
+        location: document.getElementById('shopLocation').value.trim(),
+        onlinePrice: parseFloat(document.getElementById('shopOnlinePrice').value) || 0,
+        actualPrice: parseFloat(document.getElementById('shopActualPrice').value) || 0,
+        timestamp: Date.now()
+    };
+
+    trip.shoppingList.push(newItem);
+    
+    window.renderLedgerDetails(); 
+    e.target.reset(); 
+    window.saveLedgerData(trip); 
+    window.showToast('Item saved', 'success');
+}
+
+window.deleteShoppingItem = function(itemId) {
+    if(!confirm("Remove this item?")) return;
+    const trip = window.getActiveLedger(); 
+    trip.shoppingList = trip.shoppingList.filter(i => i.id !== itemId); 
+    window.renderLedgerDetails(); 
+    window.saveLedgerData(trip);
+}
+
 window.renderDebtChart = function(trip) {
     const ctx = document.getElementById('debtChart').getContext('2d');
     if (window.chartInstance) window.chartInstance.destroy();
@@ -1272,7 +1342,6 @@ window.renderLedgerDetails = function() {
         if (categoryName !== 'Settlement') { 
             totalCost += parseFloat(exp.amount) || 0; 
             
-            // Filter logic for category chart
             let amountForFilter = 0;
             if (window.ledgerFilterPerson) {
                 if (involved.includes(window.ledgerFilterPerson)) {
@@ -1293,12 +1362,61 @@ window.renderLedgerDetails = function() {
             involved.forEach(u => { balances[u] -= split; if (categoryName !== 'Settlement') individualShare[u] += split; });
         }
     });
-    lucide.createIcons({ nodes: [expLog, userList] });
+    
+    // NEW: Shopping List Rendering Integration
+    const shopListCont = document.getElementById('shoppingListContainer');
+    const shopParticipant = document.getElementById('shopParticipant');
+    
+    shopListCont.innerHTML = '';
+    shopParticipant.innerHTML = '<option value="" disabled selected>-- Participant --</option>';
+
+    trip.users.forEach(user => {
+        shopParticipant.innerHTML += `<option value="${window.sanitizeText(user)}">${window.sanitizeText(user)}</option>`;
+    });
+
+    if (!trip.shoppingList || trip.shoppingList.length === 0) {
+        shopListCont.innerHTML = '<div class="p-4 border border-dashed border-outline-variant/40 rounded-xl text-center text-sm font-label text-on-surface-variant">List is empty.</div>';
+    } else {
+        trip.shoppingList.forEach(item => {
+            const priceDiff = item.onlinePrice > 0 && item.actualPrice > 0 ? (item.onlinePrice - item.actualPrice) : null;
+            let priceBadge = '';
+            
+            if (priceDiff !== null) {
+                if (priceDiff > 0) priceBadge = `<span class="text-[10px] font-bold text-success bg-success/10 px-2 py-1 rounded">Saved ${priceDiff.toFixed(2)}!</span>`;
+                else if (priceDiff < 0) priceBadge = `<span class="text-[10px] font-bold text-error bg-error/10 px-2 py-1 rounded">Overpaid ${Math.abs(priceDiff).toFixed(2)}</span>`;
+            }
+
+            shopListCont.innerHTML += `<li class="bg-white p-4 rounded-xl shadow-sm border border-outline-variant/20 relative group">
+                <button onclick="window.deleteShoppingItem('${item.id}')" class="absolute top-4 right-4 text-outline-variant hover:text-error transition-colors"><i data-lucide="x" style="width:16px;"></i></button>
+                <div class="pr-8">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-primary">${window.sanitizeText(item.participant)}</span>
+                    <h4 class="font-bold text-lg leading-tight mt-0.5 text-on-surface">${window.sanitizeText(item.itemName)}</h4>
+                    ${item.location ? `<div class="text-xs text-on-surface-variant flex items-center gap-1 mt-1.5 font-label"><i data-lucide="map-pin" style="width:12px;"></i> ${window.sanitizeText(item.location)}</div>` : ''}
+                </div>
+                <div class="flex items-end justify-between mt-4 border-t border-outline-variant/20 pt-3">
+                    <div class="flex gap-4">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-on-surface-variant">Online</p>
+                            <p class="font-serif text-lg ${item.onlinePrice ? 'text-on-surface' : 'text-on-surface-variant opacity-50'}">${item.onlinePrice ? item.onlinePrice.toFixed(2) : '---'}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-on-surface-variant">Actual</p>
+                            <p class="font-serif text-lg ${item.actualPrice ? 'text-primary font-bold' : 'text-on-surface-variant opacity-50'}">${item.actualPrice ? item.actualPrice.toFixed(2) : '---'}</p>
+                        </div>
+                    </div>
+                    ${priceBadge}
+                </div>
+            </li>`;
+        });
+    }
+
+    // Initialize all icons, including the new shopping list ones
+    lucide.createIcons({ nodes: [expLog, userList, shopListCont] });
+    
     window.renderDebtChart(trip);
 
     document.getElementById('totalSpentDisplay').textContent = `${totalCost.toFixed(2)}`;
     
-    // Set dynamic Category Header
     document.getElementById('cat-header').innerHTML = `<h3 class="font-headline text-xl font-bold italic text-on-surface">By Category ${window.ledgerFilterPerson ? `(<span class="text-primary">${window.sanitizeText(window.ledgerFilterPerson)}</span>)` : ''}</h3>`;
 
     const catSum = document.getElementById('categorySummary'); const perSum = document.getElementById('personSummary'); catSum.innerHTML = ''; perSum.innerHTML = '';
